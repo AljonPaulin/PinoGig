@@ -27,11 +27,17 @@ const EditProfile = () => {
             const { UID } = await getUID();
         
             if(UID !== undefined){
-                const { data, error } = await getProfile(UID);
-                if(error === null){
-                    setDataProfile(data)
+                const { artistData, artistError, hostData, hostError } = await getProfile(UID);
+                if(artistError === null && hostError === null){
+                  if(artistData?.length !== 0){
+                    setDataProfile(artistData);
+                  }
+                  if(hostData?.length !== 0){
+                    setDataProfile(hostData);
+                  }
                 }else{
-                    Alert.alert(error.message)
+                  if(artistError) Alert.alert(artistError.message)
+                  if(artistError) Alert.alert(artistError.message)
                 }
             }
         }
@@ -48,22 +54,20 @@ const EditProfile = () => {
         );
     }
 
-    
-    
     return (
         <SafeAreaView style={{ flex: 1}}>
-        <View className='w-full flex flex-row items-center justify-between p-4 bg-white'>
+        <View className='w-full flex flex-row items-center justify-between p-4 bg-secondary'>
             <TouchableOpacity onPress={() => router.push('/Profile')}>
-                <Ionicons name="arrow-back-outline" size={24} color="black" />
+                <Ionicons name="arrow-back-outline" size={24} color="white" />
             </TouchableOpacity>
-            <Text className='text-xl'>Edit Profile</Text>
-            <Entypo name="dots-three-vertical" size={18} color="black" />
+            <Text className='text-xl text-white'>Edit Profile</Text>
+            <Entypo name="dots-three-vertical" size={18} color="transparent" />
         </View>
-        <ScrollView showsVerticalScrollIndicator={false}>
+        <ScrollView showsVerticalScrollIndicator={false} className='bg-primary'>
         {type === 'artist' ? (
             <ArtistInputProfile data={dataProfile?.[0]} mode='edit' />
             ) : (
-            <HostInputProfile />
+            <HostInputProfile data={dataProfile?.[0]} mode='edit' />
         )}
         </ScrollView>
     </SafeAreaView>
