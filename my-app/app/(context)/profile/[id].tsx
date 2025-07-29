@@ -13,19 +13,26 @@ const ProfileDetails = () => {
 
     useEffect(() => {
         const loadData = async () => {
-            const { data, error } = await getProfile(id);
-            if(error){
-                Alert.alert(error.message)
-            }else{
+            const { artistData, artistError, hostData, hostError } = await getProfile(id);
+            if(artistError === null && hostError === null){
+              if(artistData?.length !== 0){
                 console.log("Success in Profile");
-                setProfileData(data);
+                setProfileData(artistData);
+              }
+              if(hostData?.length !== 0){
+                console.log("Success in Profile");
+                setProfileData(hostData);
+              }
+            }else{
+                if(artistError) Alert.alert(artistError.message)
+                if(artistError) Alert.alert(artistError.message)
             }
         }
         loadData();
     }, [])
 
     return (
-        <SafeAreaView style={{ flex: 1, paddingBottom: 20}}>
+        <SafeAreaView style={{ flex: 1}}>
             <View className='w-full flex flex-row items-center justify-between p-4 bg-secondary'>
                 <TouchableOpacity onPress={() => router.back()}>
                     <Ionicons name="arrow-back-outline" size={24} color="white" />

@@ -4,5 +4,6 @@ export interface Artist{
     about: string,
     location: string,
     phone: string,
-    skills: string[]
+    skills: string[],
+    email: string | undefined
 }

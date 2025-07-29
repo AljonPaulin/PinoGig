@@ -2,10 +2,13 @@ import { View, Text, Modal, TouchableOpacity } from 'react-native'
 import React from 'react'
 import { router } from 'expo-router'
 
-const DeleteAlert = ({ visible, type, message, onClose }: any ) => {
+const DeleteAlert = ({ visible, type, message, onClose, onConfirm }: any ) => {
     const handle = (type: string, del: boolean ) =>{
         if(type === 'profile' && del ){
-            router.push('/(tabs)/Setting')
+            onConfirm()
+        }
+        if(type === 'application' && del ){
+            onConfirm()
         }
         onClose()
 
@@ -31,7 +34,7 @@ const DeleteAlert = ({ visible, type, message, onClose }: any ) => {
                 className="bg-red-500 px-5 py-2 rounded-lg"
                 onPress={() => handle(type, true)}
             >
-                <Text className="text-white font-bold">Delete</Text>
+                <Text className="text-white font-bold">Confirm</Text>
             </TouchableOpacity>
             </View>
             </View>

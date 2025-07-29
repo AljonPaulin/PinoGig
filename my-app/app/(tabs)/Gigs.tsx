@@ -93,7 +93,7 @@ const Gigs = () => {
             <Text className='text-2xl text-white font-bold'>Gigs</Text>
             <View className='flex flex-row flex-wrap gap-7'>
               <MaterialIcons name="post-add" size={28} color="#1d7fe0" />
-              <Entypo name="message" size={28} color="#1d7fe0" onPress={() => router.push('/(subTabs)/Message')}/>
+              <Entypo name="message" size={28} color="#1d7fe0" onPress={() => router.push('/(subTabs)/Chats')}/>
             </View>
         </View>
         <View className='w-full flex flex-row items-center justify-between p-4 bg-primary'>
@@ -106,7 +106,7 @@ const Gigs = () => {
         </View>
         {
           isHost ? (
-            <View className='bg-primary h-full'>
+            <View className='bg-primary h-full pb-60'>
                <FlatList
                 className='mb-14 bg-primary p-4'
                 data={data}

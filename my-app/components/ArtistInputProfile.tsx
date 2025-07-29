@@ -4,6 +4,8 @@ import { MultipleSelectList } from 'react-native-dropdown-select-list';
 import { supabase } from '@/lib/supabase';
 import { Artist } from '@/types/artist';
 import { router } from 'expo-router';
+import { User } from '@/types/user';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 
 const ArtistInputProfile = ({ data, mode } : any) => {
     const [ name, setName ] = useState("");
@@ -14,6 +16,8 @@ const ArtistInputProfile = ({ data, mode } : any) => {
     const [ isFocused, setIsFocused] = useState<string | null>(null);
     const [ skills, setSkills] = useState([]);
     const [ loading, setLoading ] = useState(false);
+    const { uid, email } = useCurrentUser();
+
 
     useEffect(() => {
         if (data) {
@@ -40,18 +44,29 @@ const ArtistInputProfile = ({ data, mode } : any) => {
 
     const handleSaveProfile = async () => {
         setLoading(true)
+        if (!email || !uid) return;
+
         const artist: Artist = {
             name,
             about,
             description,
             location,
             phone,
-            skills
+            skills,
+            email
         }
-        const { error } = await supabase.from('profileArtist').insert(artist);
+        const user: User = {
+            name,
+            type: 'artist',
+            email: email,
+            uuid: uid,
+        }
+        const { error: artistError } = await supabase.from('profileArtist').insert(artist);
+        const { error: userError } = await supabase.from('users').insert(user);
 
-        if(error){
-            Alert.alert(error.message)
+        if (artistError || userError) {
+            if (artistError) Alert.alert(artistError.message);
+            if (userError) Alert.alert(userError.message);
         }else{
             console.log('Success in creating profile');
             router.push('/(tabs)/Profile')
@@ -61,13 +76,15 @@ const ArtistInputProfile = ({ data, mode } : any) => {
     }
     const handleUpdateProfile = async () => {
         setLoading(true)
+        if (!email) return;
         const artist: Artist = {
             name,
             about,
             description,
             location,
             phone,
-            skills
+            skills,
+            email
         }
         const { error } = await supabase.from('profileArtist').update(artist).eq('id', data.id);
 
@@ -163,7 +180,7 @@ const ArtistInputProfile = ({ data, mode } : any) => {
                 />
             </View>
             { mode === 'edit' ? (
-                <TouchableOpacity disabled={loading} className='bg-tertiary rounded-md m-1 mt-4' onPress={() => handleUpdateProfile()}>
+                <TouchableOpacity disabled={loading} className='bg-tertiary p-4 rounded-md m-1 mt-4' onPress={() => handleUpdateProfile()}>
                     <Text className='text-white text-center font-bold'>Update Now</Text>
                 </TouchableOpacity>
             ) : (

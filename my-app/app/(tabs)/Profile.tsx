@@ -11,6 +11,8 @@ import { getUID, getUser } from '@/lib/supabase/auth';
 import { getProfile } from '@/lib/supabase/profile';
 import HostProfile from '@/components/HostProfile';
 import DeleteAlert from '@/components/DeleteAlert';
+import { supabase } from '@/lib/supabase';
+import CustomAlert from '@/components/CustomAlert';
 
 
 const Profile = () => {
@@ -19,19 +21,23 @@ const Profile = () => {
   const [ email, setEmail ] = useState<string | undefined>(undefined);
   const [ showContent, setShowContent] = useState(false);
   const [ showDelete, setShowDelete] = useState(false);
+  const [ showAlert, setShowAlert] = useState(false);
+  const [ profileExist, setProfileExist] = useState(false);
   const [ type, setType] = useState("");
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowContent(true);
-    }, 1500); // 1.5 seconds
-
-    return () => clearTimeout(timer); // cleanup
-  }, []);
-
   useFocusEffect(
-    useCallback(() => {
-      setShowDelete(false)
+    useCallback(()=>{
+      setShowContent(false);
+
+      const timer = setTimeout(() => {
+        setShowContent(true);
+      }, 1500); // 1.5 seconds
+  
+      return () => clearTimeout(timer); // cleanup
+      
+  },[]))
+
+  useEffect(() => {
       const loadEmail = async () => {
         const { data: { user } } = await getUser();
         if(user !== null){
@@ -39,32 +45,79 @@ const Profile = () => {
         }else{
           setEmail('not found')
         }
-    }
-    const loadData = async () => {
-      const { UID } = await getUID();
-      
-        if(UID !== undefined){
-          const { artistData, artistError, hostData, hostError } = await getProfile(UID);
-          if(artistError === null && hostError === null){
-            if(artistData?.length !== 0){
-              setDataProfile(artistData);
-              setType("artist");
+      }
+      const loadData = async () => {
+        const { UID } = await getUID();
+        
+          if(UID !== undefined){
+            const { artistData, artistError, hostData, hostError } = await getProfile(UID);
+            if(artistError === null && hostError === null){
+              if(artistData?.length !== 0){
+                setDataProfile(artistData);
+                setType("artist");
+                setProfileExist(true)
+              }
+              if(hostData?.length !== 0){
+                setDataProfile(hostData);
+                setType("host");
+                setProfileExist(true)
+              }
+            }else{
+              if(artistError) Alert.alert(artistError.message)
+              if(artistError) Alert.alert(artistError.message)
             }
-            if(hostData?.length !== 0){
-              setDataProfile(hostData);
-              setType("host");
-            }
-          }else{
-            if(artistError) Alert.alert(artistError.message)
-            if(artistError) Alert.alert(artistError.message)
           }
-        }
+      }
+
+      loadEmail();
+      loadData();
+
+  }, [profileExist]);
+
+  const deleteProfile = async ( typeProfile: string) => {
+    if(dataProfile === null) return
+
+    const response = await supabase
+        .from('users')
+        .delete()
+        .eq('uuid', dataProfile[0].uuid)
+    
+    if(typeProfile === 'host'){
+      const response = await supabase
+        .from('profileHost')
+        .delete()
+        .eq('uuid', dataProfile[0].uuid)
+
+      if(response.status === 204){
+          console.log('Successful delete');
+          setProfileExist(false)
+          setDataProfile(null)
+          setType("");
+          router.push('/(tabs)/Home')
+      }else{
+          console.log('failed');
+      }
+    }else{
+      const response = await supabase
+        .from('profileArtist')
+        .delete()
+        .eq('uuid', dataProfile[0].uuid)
+
+      if(response.status === 204){
+          console.log('Successful delete');
+          setProfileExist(false)
+          setDataProfile(null)
+          setType("");
+          router.push('/(tabs)/Home')
+      }else{
+          console.log('failed');
+      }
     }
-
-    loadEmail();
-    loadData();
-
-  }, []));
+  };
+  
+  const handleDelete = () =>{
+      profileExist ? setShowDelete(true) : setShowAlert(true)
+  }
 
   if (!showContent) {
     return (
@@ -82,14 +135,21 @@ const Profile = () => {
             type={'profile'}
             message="Do you want to delete your profile?"
             onClose={() => setShowDelete(false)}
+            onConfirm={() => deleteProfile(type)}
+        />
+        <CustomAlert
+            visible={showAlert}
+            type={'notice'}
+            message="Create Your Profile First"
+            onClose={() => setShowAlert(false)}
         />
         <View className='w-full flex flex-row items-center justify-between p-4 bg-secondary'>
             <TouchableOpacity onPress={() => router.back()}>
                 <Ionicons name="arrow-back-outline" size={24} color="white" />
             </TouchableOpacity>
             <Text className='text-xl text-white'>Profile</Text>
-            <TouchableOpacity onPress={() => setShowDelete(true)}>
-                <Entypo name="dots-three-vertical" size={18} color="white" />
+            <TouchableOpacity onPress={() => handleDelete()}>
+                <MaterialIcons name="delete" size={20} color="red" />
             </TouchableOpacity>
         </View>
 

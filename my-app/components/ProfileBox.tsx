@@ -115,7 +115,7 @@ const ProfileBox = (props : any) => {
             <Text className='font-semibold text-xl mb-2 text-white'>Contact</Text>
             <View className='flex flex-row flex-wrap gap-3 mb-2'>
             <MaterialIcons name="email" size={20} color="#1d7fe0" />
-            <Text className='font-medium text-md text-gray-400'>{props.email}</Text>
+            <Text className='font-medium text-md text-gray-400'>{props.profile.email}</Text>
             </View>
             <View className='flex flex-row flex-wrap gap-3'>
             <FontAwesome name="phone" size={20} color="#1d7fe0" />

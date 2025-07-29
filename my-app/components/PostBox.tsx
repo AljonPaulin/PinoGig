@@ -3,9 +3,11 @@ import React from 'react'
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 
 const PostBox = (props : any) => {
     const router = useRouter();
+
     return (
       <TouchableOpacity className="w-full bg-secondary p-4 mb-3 rounded-xl" onPress={() => router.push(`/(context)/post/${props.data.id}`)}>
        
@@ -14,7 +16,7 @@ const PostBox = (props : any) => {
         </View>
         <View className="flex flex-row justify-between items-center p-2 ml-2">
             <View>
-                <View className='flex flex-row items-center justify-between'>
+                <View className='w-full flex flex-row items-center justify-between'>
                     <View>
                         <Text numberOfLines={1} className='w-60 font-bold text-xl text-white'>{props.data.title}</Text>
                         <View className='w-full flex flex-row flex-wrap gap-3 items-start'>

@@ -47,17 +47,17 @@ const EditProfile = () => {
 
     if (!showContent) {
         return (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-            <ActivityIndicator size="large" color="#000" />
-            <Text>Loading...</Text>
-        </View>
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center'}} className='bg-primary'>
+            <ActivityIndicator size="large" color="white" />
+            <Text className='text-white'>Loading...</Text>
+          </View>
         );
     }
 
     return (
         <SafeAreaView style={{ flex: 1}}>
         <View className='w-full flex flex-row items-center justify-between p-4 bg-secondary'>
-            <TouchableOpacity onPress={() => router.push('/Profile')}>
+            <TouchableOpacity onPress={() => router.push('/(tabs)/Profile')}>
                 <Ionicons name="arrow-back-outline" size={24} color="white" />
             </TouchableOpacity>
             <Text className='text-xl text-white'>Edit Profile</Text>

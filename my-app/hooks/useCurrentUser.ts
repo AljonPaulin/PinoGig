@@ -8,12 +8,12 @@ export function useCurrentUser() {
 
     useEffect(() => {
         const getUser = async () => {
-            const { data: { user }, error } = await supabase.auth.getUser()
+            const { data, error } = await supabase.auth.getUser()
             if(error) {
                 console.log(error.message);
             } else{
-                setEmail(user?.email)
-                setUid(user?.id)
+                setEmail(data.user.email);
+                setUid(data.user.id)
             }
             setLoading(false)
         }

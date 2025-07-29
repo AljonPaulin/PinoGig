@@ -10,20 +10,63 @@ import { Gig } from '@/types/gig';
 import { fetchGig } from '@/lib/supabase/gigs';
 import { getBucket, getGigPic } from '@/lib/supabase/storage';
 import { supabase } from '@/lib/supabase';
+import { Booking } from '@/types/booking';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
+import DeleteAlert from '@/components/DeleteAlert';
+import { getProfile } from '@/lib/supabase/profile';
 const GigDetails = () => {
     const {id} = useLocalSearchParams();
+    const { uid } = useCurrentUser();
     const [gigData, setGigData] = useState<Gig |null>(null)
+    const [ userProfile, setUserProfile ] = useState<any | null>(null);
+    const [ gigHost, setGigHost ] = useState<any | null>(null);
     const [gigPic, setGigPic] = useState("")
+    const [isApplied, setIsApplied] = useState(false)
+    const [showCancel, setShowCancel] = useState(false)
+    const [gigUid, setGigUid] = useState("")
     
 
     useEffect(() => {
+        if(!uid) return
+
         const loadData = async () => {
+            
             const { data, error } = await fetchGig(id);
             if(error){
                 Alert.alert(error.message)
             }else{
-                console.log("Success in Box");
                 setGigData(data?.[0]);
+                setGigUid(data?.[0].uuid);
+            }
+
+            const { data : hostData, error: hostError} = await supabase.from('users').select().eq('uuid', data?.[0].uuid);
+            if(hostError){
+                Alert.alert(hostError.message)
+            }else{
+                setGigHost(hostData?.[0]);
+            }
+
+
+            
+            const { artistData, artistError } = await getProfile(uid);
+            if( artistError === null ){
+                if(artistData?.length !== 0){
+                    setUserProfile(artistData?.[0])
+                }
+            }else{
+                if(artistError) Alert.alert(artistError.message)
+            }
+        }
+        const loadBooking = async () => {
+            const { data, error } = await supabase.from('Booking').select('id').eq('sender_uid', uid);
+            if(error){
+                Alert.alert(error.message)
+            }else{
+                if(data.length !== 0){
+                    setIsApplied(true)
+                }else{
+                    console.log('not applied yet')
+                }
             }
         }
 
@@ -37,17 +80,59 @@ const GigDetails = () => {
                 if(data){
                     const urls = (await supabase.storage.from('assets').createSignedUrl(`gig/${data[0].name}`, 60)).data?.signedUrl
                     setGigPic(urls ?? '');
-                    console.log(gigPic);
                     console.log("Success Bucket");
                 }
             }
         }
+        loadBooking();
         loadData();
         loadPic();
-    }, [])
+    }, [uid])
+
+    const handleApply = async() => {
+        if (!uid || userProfile === null ) return
+
+        const booking: Booking = {
+            sender_uid: uid,
+            receiver_uid: gigUid,
+            is_Accepted: false,
+            stageName: userProfile.name,
+            description: userProfile.description
+        }
+        console.log(booking);
+        
+        const { error } = await supabase
+            .from('Booking')
+            .insert(booking)
+        
+        if(error){
+            Alert.alert(error.message)
+        }else{
+            router.push('/(subTabs)/Message')
+        }
+    };
+    const cancellation = async () => {
+        const response = await supabase
+            .from('Booking')
+            .delete()
+            .eq('sender_uid', uid)
+        if(response.status === 204){
+            console.log('Successfull cancel');
+            setIsApplied(false)
+        }else{
+            console.log('failed');
+        }
+    };
 
     return (
         <SafeAreaView style={{ flex: 1}}>
+            <DeleteAlert 
+            visible={showCancel} 
+            type={'application'} 
+            message={'Do you want to cancel your Application to this gig?'}
+            onClose={()=> setShowCancel(false)}
+            onConfirm={()=> cancellation()}
+            />
             <View className='w-full flex flex-row items-center justify-between p-4 bg-secondary'>
                 <TouchableOpacity onPress={() => router.back()}>
                     <Ionicons name="arrow-back-outline" size={24} color="white" />
@@ -55,7 +140,7 @@ const GigDetails = () => {
                 <Text className='text-xl text-white font-bold'>Gig Details</Text>
                 <Ionicons name="bookmark-sharp" size={24} color="#1d7fe0" />
             </View>
-            {gigData ? (
+            {gigData && gigHost ? (
             <ScrollView showsVerticalScrollIndicator={false}  className='bg-primary'>
                 <Image
                 className='w-full size-56 bg-slate-600' src={gigPic} />
@@ -103,11 +188,13 @@ const GigDetails = () => {
                     <View className='w-full border-y border-y-gray-300 py-3'>
                         <Text className='text-lg font-medium py-1 text-white'>Venue Host</Text>
                         <View className='w-full flex flex-row justify-between items-center'>
-                            <Image
+                            {uid !== gigUid && (
+                                  <Image
                             className='size-14 bg-slate-600 rounded-full'
                             source={require('../../../assets/images/react-logo.png')} />
+                            )}
                             <View>
-                                <Text className='font-bold text-white'>Sarah Jonhson</Text>
+                                <Text className='font-bold text-white'>{gigHost.name}</Text>
                                 <Text className='font-semibold text-sm text-gray-300'>Venue Manager</Text>
                                 <View className='flex flex-row items-center gap-1 flex-wrap' >
                                     <View className='flex flex-row flex-wrap gap-1'>
@@ -121,9 +208,11 @@ const GigDetails = () => {
                                 </View>
                             </View>
                             <View>
-                                <TouchableOpacity className='border border-tertiary bg-tertiary px-3 py-1 rounded-md'>
-                                    <Text className='text-center'>Message</Text>
-                                </TouchableOpacity>
+                                {uid !== gigUid && (
+                                    <TouchableOpacity className='border border-tertiary bg-tertiary px-3 py-1 rounded-md'>
+                                      <Text className='text-center'>Message</Text>
+                                    </TouchableOpacity>
+                                )}
                             </View>
                         </View>
                     </View>
@@ -158,9 +247,17 @@ const GigDetails = () => {
               )
             }
             <View className='w-full flex flex-row items-center justify-between p-4 bg-primary'>
-                <TouchableOpacity onPress={() => router.back()} className=' w-full bg-tertiary py-2 rounded-lg'>
-                    <Text className='text-white text-center font-semibold text-xl '>Appy for Gig</Text>
-                </TouchableOpacity>
+                {isApplied ? (
+                    <TouchableOpacity onPress={() => setShowCancel(true)} className='w-full bg-secondary py-2 rounded-lg'>
+                        <Text className='text-tertiary text-center font-semibold text-xl '>Applied</Text>
+                    </TouchableOpacity>
+                ) : (
+                    uid !== gigUid && (
+                        <TouchableOpacity onPress={() => handleApply()} className=' w-full bg-tertiary py-2 rounded-lg'>
+                            <Text className='text-white text-center font-semibold text-xl '>Appy for Gig</Text>
+                        </TouchableOpacity>
+                    )
+                )}
             </View>
         </SafeAreaView>
     )

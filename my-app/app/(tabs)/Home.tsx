@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity, ScrollView, Image, Alert } from 'react-native'
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import FontAwesome from '@expo/vector-icons/FontAwesome'
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
@@ -7,15 +7,20 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons'
 import GigBox from '@/components/GigBox'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import { fetchData } from '@/lib/supabase/gigs'
-import { Gig } from '@/types/gig'
-import { FlatList } from 'react-native'
-import { useRouter } from 'expo-router'
+import { useFocusEffect, useRouter } from 'expo-router'
+import { useCurrentUser } from '@/hooks/useCurrentUser'
+import { supabase } from '@/lib/supabase'
 
 const Home = () => {
   const [data, setData] = useState<any[]|null>(null);
+  const [ artists, setArtists] = useState(0);
+  const [ gigs, setGigs] = useState(0);
+  const { uid } = useCurrentUser();
   const router = useRouter();
 
-  useEffect(() => {
+  useFocusEffect(
+    useCallback(() => {
+      if(!uid) return
       const loadData = async () => {
         const {data, error} = await fetchData();
 
@@ -25,9 +30,28 @@ const Home = () => {
           setData(data)
         }
       }
+      const loadAll = async () => {
+        const { count : countArtist, error: artistError} = await supabase
+            .from('profileArtist')
+            .select('*', { count: 'exact', head: true })
+
+        const { count : countGig, error: gigError} = await supabase
+            .from('gigs')
+            .select('*', { count: 'exact', head: true })
+
+        if(artistError || gigError){
+          if(artistError) Alert.alert(artistError.message);
+          if(gigError) Alert.alert(gigError.message)
+        }else{
+          if(countArtist !== null) setArtists(countArtist)
+          if(countGig !== null) setGigs(countGig)
+        }
+      }
 
       loadData()
-  }, [])
+      loadAll()
+    }, [uid])
+  )
   return (
     <View className='w-full items-center p-4 pb-16 bg-[#000e1a]'>
       <View className='w-full flex flex-row justify-between pb-2'>
@@ -66,11 +90,11 @@ const Home = () => {
         </View>
        <View className="w-full flex flex-row my-3 justify-evenly">
           <View className="w-28 bg-[#082644] flex justify-center items-center rounded-xl py-3">
-            <Text className="text-2xl font-semibold text-white">1.2K</Text>
+            <Text className="text-2xl font-semibold text-white">{gigs}</Text>
             <Text className="text-md text-gray-500 font-bold">Active Gigs</Text>
           </View>
           <View className="w-28 bg-[#082644] flex justify-center items-center rounded-xl py-3">
-            <Text className="text-2xl font-semibold text-white">850</Text>
+            <Text className="text-2xl font-semibold text-white">{artists}</Text>
             <Text className="text-md text-gray-500 font-bold">Artist</Text>
           </View>
           <View className="w-28 bg-[#082644] flex justify-center items-center rounded-xl py-3">
