@@ -15,6 +15,8 @@ const Home = () => {
   const [data, setData] = useState<any[]|null>(null);
   const [ artists, setArtists] = useState(0);
   const [ gigs, setGigs] = useState(0);
+  const [ musicians, setMusicians] = useState(0);
+  const [ comedians, setComedians] = useState(0);
   const { uid } = useCurrentUser();
   const router = useRouter();
 
@@ -47,13 +49,37 @@ const Home = () => {
           if(countGig !== null) setGigs(countGig)
         }
       }
+      const loadCategory = async () => {
+        const categories = ['Singer', 'Comedian'];
+
+        const results = await Promise.all(
+          categories.map(category => 
+            supabase.from('gig_applications').select('*',{count: 'exact', head: true }).eq('category', category)
+          )
+        )
+        const [singerResult, comedianResult] = results;
+        const countSinger = singerResult.count;
+        const countGigComedian = comedianResult.count;
+        const gigErrorSinger = singerResult.error;
+        const gigErrorComedian = comedianResult.error;
+
+        if(gigErrorSinger || gigErrorComedian){
+          if(gigErrorSinger) Alert.alert(gigErrorSinger.message);
+          if(gigErrorSinger) Alert.alert(gigErrorSinger.message)
+        }else{
+          if(countSinger !== null) setMusicians(countSinger)
+          if(countGigComedian !== null) setComedians(countGigComedian)
+        }
+
+    }
 
       loadData()
       loadAll()
+      loadCategory()
     }, [uid])
   )
   return (
-    <View className='w-full items-center p-4 pb-16 bg-[#000e1a]'>
+    <View className='w-full items-center p-4 bg-[#000e1a] h-full'>
       <View className='w-full flex flex-row justify-between pb-2'>
         <View className='flex flex-row flex-wrap gap-3 items-center'>
           <FontAwesome6 name="music" size={20} color="#1d7fe0" />
@@ -122,12 +148,12 @@ const Home = () => {
             <TouchableOpacity className="w-[45%] flex justify-center items-center bg-dark p-2 rounded-xl" onPress={() => router.push({pathname: '/Gigs', params : { main : 'artist' , filterData: 'musicians'}})}>
               <FontAwesome6 name="music" size={20} color="#1d7fe0" />
               <Text className="text-xl font-semibold text-white">Musicians</Text>
-              <Text className="text-gray-400 font-bold">300 gigs</Text>
+              <Text className="text-gray-400 font-bold">{musicians} gigs</Text>
             </TouchableOpacity>
             <TouchableOpacity className="w-[45%] flex justify-center items-center bg-dark first-letter:p-2 rounded-xl" onPress={() => router.push({pathname: '/Gigs', params : { main : 'artist' , filterData: 'comedians'}})}>
             <MaterialIcons name="theater-comedy" size={24} color="#1d7fe0" />
               <Text className="text-xl font-semibold text-white">Comedians</Text>
-              <Text className="text-gray-400 font-bold">128 gigs</Text>
+              <Text className="text-gray-400 font-bold">{comedians} gigs</Text>
             </TouchableOpacity>
             <TouchableOpacity className="w-[45%] flex justify-center items-center bg-dark p-2 rounded-xl" onPress={() => router.push({pathname: '/Gigs', params : { main : 'artist' , filterData: 'dancers'}})}>
               <MaterialCommunityIcons name="dance-pole" size={24} color="#1d7fe0" />

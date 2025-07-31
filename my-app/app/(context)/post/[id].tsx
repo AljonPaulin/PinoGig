@@ -95,7 +95,7 @@ const GigDetails = () => {
         const booking: Booking = {
             sender_uid: uid,
             receiver_uid: gigUid,
-            is_Accepted: false,
+            is_Accepted: null,
             stageName: userProfile.name,
             description: userProfile.description
         }
@@ -108,7 +108,7 @@ const GigDetails = () => {
         if(error){
             Alert.alert(error.message)
         }else{
-            router.push('/(subTabs)/Message')
+            router.push(`/(context)/message/${gigUid}`)
         }
     };
     const cancellation = async () => {
