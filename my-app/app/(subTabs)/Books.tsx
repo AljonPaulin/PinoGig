@@ -24,7 +24,7 @@ const Books = () => {
       
           return () => clearTimeout(timer);
           
-      },[]))
+    },[]))
 
     useFocusEffect(
         useCallback(()=> {
@@ -63,7 +63,7 @@ const Books = () => {
     }, [uid]))
 
     const handleRequest = async (sender_uid: string, accept: boolean) => {
-        const { error } = await supabase.from('Booking').update({ is_Accepted : accept}).eq('sender_uid', sender_uid)
+        const { error } = await supabase.from('Booking').update({ is_Accepted : accept}).eq('sender_uid', sender_uid).eq('receiver_uid', uid)
         if(error){
             Alert.alert(error.message)
         }else{

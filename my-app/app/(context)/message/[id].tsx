@@ -1,4 +1,4 @@
-import { View, Text, Alert, TouchableOpacity, ScrollView, TextInput, KeyboardAvoidingView, Platform, FlatList, Image, TouchableWithoutFeedback, Keyboard, StyleSheet, Button, BackHandler } from 'react-native'
+import { View, Text, Alert, TouchableOpacity, ScrollView, TextInput, KeyboardAvoidingView, Platform, FlatList, Image, TouchableWithoutFeedback, Keyboard, StyleSheet, Button, BackHandler, ActivityIndicator, ToastAndroid } from 'react-native'
 import React, { useCallback, useEffect, useState } from 'react'
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { useCurrentUser } from '@/hooks/useCurrentUser';
@@ -11,11 +11,12 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { getTimeAgo } from '@/utils/timeAgo';
 
 const Chatting = () => {
-    const { id, type} = useLocalSearchParams();
+    const { id, type, root} = useLocalSearchParams();
     const { uid } = useCurrentUser();
     const [ receiverUser , setReceiverUser ] = useState<string | null>(null)
     const [ conversationData , setConversationData ] = useState<any[] | null>(null)
     const [ isFocused , setIsFocused ] = useState(false)
+    const [ showContent , setShowContent ] = useState(false)
     const [ msg , setMsg ] = useState("")
     const [ conversationID , setConversationID ] = useState<string | null>(null)
     const [ refreshKey, setRefreshKey] = useState(0)
@@ -36,22 +37,35 @@ const Chatting = () => {
 
     useFocusEffect(
         useCallback(()=> {
-            console.log(refreshKey);
             setConversationID(null)
+
             let isActive = true
+
             if(!uid) return
 
-            const loadConversationID = async () => {
-                const { data, error } = await supabase.from('messages').select('conversation_id').eq('sender_id', id).eq('receiver_id', uid)
+            const loadConversationID = async (root: any) => {
+                let srcUID, srcID = ""
+
+                if(root === 'sender'){
+                  srcUID = 'receiver_id'
+                  srcID = 'sender_id'
+                }else{
+                  srcID = 'receiver_id'
+                  srcUID = 'sender_id'
+                }
+                
+                const { data, error } = await supabase.from('messages').select('conversation_id').eq(srcUID, uid).eq(srcID, id)
 
                 if (isActive) {
                     if (error) {
+                        console.log('loadloadConversationID error');
                         Alert.alert(error.message);
-                    }  else if (data?.length > 0) {
+                    } else if(data?.length > 0) {
                         const conversationId = data[0].conversation_id
                         setConversationID(conversationId)
                         await loadChats(conversationId)
                     }else{
+                        console.log(data);
                         return
                     }
                 }
@@ -61,7 +75,8 @@ const Chatting = () => {
                 const { data, error } = await supabase.from('users').select('name').eq('uuid', id)
 
                 if (isActive) {
-                    if (error) {                       
+                    if (error) {
+                        console.log('loadReceiver error');                       
                         Alert.alert(error.message);
                     } else {
                         setReceiverUser(data[0].name)
@@ -72,16 +87,20 @@ const Chatting = () => {
                 const { data, error } = await supabase.from('messages').select().eq('conversation_id', conversationId).order('id', { ascending: false })
                 if (isActive) {
                     if (error) {
+                      console.log('loadChats error');
                       Alert.alert(error.message);
                     } else {
                         if(data.length !== 0) {
                             setConversationData(data);
+                            setShowContent(true)
                         }
                     }
                 }
             }
             if(type !== 'first') {
-                loadConversationID() 
+                loadConversationID(root) 
+            }else{
+                setShowContent(true)
             }
             loadReceiver()
            
@@ -92,19 +111,46 @@ const Chatting = () => {
     },[uid, refreshKey]))
 
     const handleSend = async () => {
-        const chats: Chats = {
+        if(msg === ""){
+          ToastAndroid.show('Please fill a messsage first!', ToastAndroid.SHORT);
+        }else{
+           const chats: Chats = {
             sender_id: uid,
             receiver_id: id.toString(),
             message: msg,
-            conversation_id: conversationID
+            conversation_id: conversationID || undefined
+          }
+          const { error } = await supabase.from('messages').insert(chats)
+          if(error){
+              Alert.alert(error.message)
+          }else{
+              if(type === 'first'){
+                router.push('/(subTabs)/Chats')
+              }else{
+                setRefreshKey(prev => prev + 1)
+                setMsg('')
+              }
+             
+          }
         }
-        const { error } = await supabase.from('messages').insert(chats)
-        if(error){
-            Alert.alert(error.message)
-        }else{
-            setRefreshKey(prev => prev + 1)
-            setMsg('')
-        }
+    }
+
+    if (!showContent) {
+      return (
+        <SafeAreaView style={{ flex: 1}}>
+           <View className="w-full flex flex-row items-center justify-between p-4 bg-secondary">
+              <TouchableOpacity onPress={() => router.push('/(subTabs)/Chats')}>
+                <Ionicons name="arrow-back-outline" size={24} color="white" />
+              </TouchableOpacity>
+              <Text className="text-2xl text-white font-bold">{receiverUser || '...'}</Text>
+              <Ionicons name="ellipsis-vertical" size={24} color="#1d7fe0" />
+            </View>
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }} className='bg-primary'>
+              <ActivityIndicator size="large" color="white" />
+              <Text className='text-white'>Loading...</Text>
+            </View>
+        </SafeAreaView>
+      );
     }
 
     return (

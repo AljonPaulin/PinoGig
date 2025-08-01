@@ -44,6 +44,7 @@ const GigDetails = () => {
                 Alert.alert(hostError.message)
             }else{
                 setGigHost(hostData?.[0]);
+                await loadBooking(hostData?.[0].uuid);
             }
 
 
@@ -57,8 +58,8 @@ const GigDetails = () => {
                 if(artistError) Alert.alert(artistError.message)
             }
         }
-        const loadBooking = async () => {
-            const { data, error } = await supabase.from('Booking').select('id').eq('sender_uid', uid);
+        const loadBooking = async (receiver_uid: string) => {
+            const { data, error } = await supabase.from('Booking').select('id').eq('sender_uid', uid).eq('receiver_uid', receiver_uid);
             if(error){
                 Alert.alert(error.message)
             }else{
@@ -84,7 +85,6 @@ const GigDetails = () => {
                 }
             }
         }
-        loadBooking();
         loadData();
         loadPic();
     }, [uid])
@@ -108,7 +108,7 @@ const GigDetails = () => {
         if(error){
             Alert.alert(error.message)
         }else{
-            router.push(`/(context)/message/${gigUid}`)
+            router.push(`/(subTabs)/Chats`)
         }
     };
     const cancellation = async () => {
