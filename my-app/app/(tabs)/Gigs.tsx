@@ -6,18 +6,26 @@ import { fetchAllAppicationGig, fetchAllData } from '@/lib/supabase/gigs';
 import ArtistBox from '@/components/ArtistBox';
 import Entypo from '@expo/vector-icons/Entypo';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { supabase } from '@/lib/supabase';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
+import AntDesign from '@expo/vector-icons/AntDesign';
 
 const Gigs = () => {
   const router = useRouter();
+  const { uid } = useCurrentUser();
   const { main, filterData } = useLocalSearchParams();
   const [data, setData] = useState<any[]|null>(null);
   const [dataApplication, setDataApplication] = useState<any[]|null>(null);
   const [ orginalData, setOrginalData] = useState<any[]|null>(null);
   const [ isHost , setIsHost ] = useState(true);
   const [ filter, setFilter ] = useState('all');
+  const [ chats, setChats ] = useState(0);
 
   useFocusEffect(
     useCallback(() => {
+
+        if(!uid) return
+
         const loadData = async () => {
           const {data, error} = await fetchAllData();
 
@@ -27,6 +35,22 @@ const Gigs = () => {
             Alert.alert(error.message);
           }else{
             setData(data)
+          }
+        }
+
+        const loadNewChats = async () => {
+          const { data: msgReceiver, error: errReceiver } = await supabase
+              .from('messages')
+              .select()
+              .eq('receiver_id', uid)
+              .eq('is_read', false)
+
+          if(errReceiver){
+            if(errReceiver) Alert.alert(errReceiver.message)
+            console.log('loadNewChats error');
+            return;
+          }else{
+            setChats(msgReceiver.length)
           }
         }
 
@@ -46,8 +70,9 @@ const Gigs = () => {
         }
 
         loadData()
+        loadNewChats()
         loadDataAppication()
-    }, [filterData, main])
+    }, [uid, filterData, main])
   );
 
   const handleFilterMain = (type: string) => {
@@ -92,8 +117,24 @@ const Gigs = () => {
         <View className='w-full flex flex-row items-center justify-between p-4 bg-secondary'>
             <Text className='text-2xl text-white font-bold'>Gigs</Text>
             <View className='flex flex-row flex-wrap gap-7'>
-              <MaterialIcons name="post-add" size={28} color="#1d7fe0" />
+              {isHost ? (
+                <TouchableOpacity onPress={() => router.push('/(context)/Posts')}>
+                 <MaterialIcons name="post-add" size={28} color="#1d7fe0" />
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity>
+                   <MaterialIcons name="account-box" size={26} color="#1d7fe0" />
+                </TouchableOpacity>
+              )
+              }
+              <View>
               <Entypo name="message" size={28} color="#1d7fe0" onPress={() => router.push('/(subTabs)/Chats')}/>
+              {chats !== 0 && (
+                <View className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-xl items-center justify-center">
+                  <Text className="text-white text-xs font-bold">{chats}</Text>
+                </View>
+              )}
+              </View>
             </View>
         </View>
         <View className='w-full flex flex-row items-center justify-between p-4 bg-primary'>

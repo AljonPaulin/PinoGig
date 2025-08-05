@@ -93,10 +93,30 @@ const Chatting = () => {
                         if(data.length !== 0) {
                             setConversationData(data);
                             setShowContent(true)
+
+                            const tasks = []
+
+                            for (const item of data) {
+                              if (!item.is_read && item.receiver_id === uid) {
+                                const task = readChats(item.conversation_id);
+                                tasks.push(task);
+                              }
+                            }
+                            await Promise.all(tasks);
                         }
                     }
                 }
             }
+
+            const readChats = async (id: string) => {
+              const { error } = await supabase
+                .from('messages')
+                .update({ is_read: true })
+                .eq('conversation_id', id)
+
+              if(error) Alert.alert(error.message)
+            }
+            
             if(type !== 'first') {
                 loadConversationID(root) 
             }else{
@@ -118,7 +138,8 @@ const Chatting = () => {
             sender_id: uid,
             receiver_id: id.toString(),
             message: msg,
-            conversation_id: conversationID || undefined
+            conversation_id: conversationID || undefined,
+            is_read: false
           }
           const { error } = await supabase.from('messages').insert(chats)
           if(error){

@@ -10,6 +10,9 @@ const DeleteAlert = ({ visible, type, message, onClose, onConfirm }: any ) => {
         if(type === 'application' && del ){
             onConfirm()
         }
+        if(type === 'post' && del ){
+            onConfirm()
+        }
         onClose()
 
     }

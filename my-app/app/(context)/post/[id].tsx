@@ -14,6 +14,7 @@ import { Booking } from '@/types/booking';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import DeleteAlert from '@/components/DeleteAlert';
 import { getProfile } from '@/lib/supabase/profile';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 const GigDetails = () => {
     const {id} = useLocalSearchParams();
     const { uid } = useCurrentUser();
@@ -23,6 +24,7 @@ const GigDetails = () => {
     const [gigPic, setGigPic] = useState("")
     const [isApplied, setIsApplied] = useState(false)
     const [showCancel, setShowCancel] = useState(false)
+    const [showDelete, setShowDelete] = useState(false)
     const [gigUid, setGigUid] = useState("")
     
 
@@ -124,14 +126,39 @@ const GigDetails = () => {
         }
     };
 
+    const deletePost = async () => {
+        const response = await supabase
+            .from('gigs')
+            .delete()
+            .eq('id', id)
+        if(response.status === 204){
+            console.log('Successful delete');
+            setShowDelete(false)
+            router.push('/(context)/Posts')
+        }else{
+            console.log('failed');
+        }
+    };
+    const deleteDaw = () => {
+        router.push('/(context)/Posts')
+    };
+
     return (
+        
         <SafeAreaView style={{ flex: 1}}>
+            <DeleteAlert
+                visible={showDelete}
+                type={'post'}
+                message="Do you want to delete your post?"
+                onClose={() => setShowDelete(false)}
+                onConfirm={() => deleteDaw()}
+            />
             <DeleteAlert 
-            visible={showCancel} 
-            type={'application'} 
-            message={'Do you want to cancel your Application to this gig?'}
-            onClose={()=> setShowCancel(false)}
-            onConfirm={()=> cancellation()}
+                visible={showCancel} 
+                type={'application'} 
+                message={'Do you want to cancel your Application to this gig?'}
+                onClose={()=> setShowCancel(false)}
+                onConfirm={()=> cancellation()}
             />
             <View className='w-full flex flex-row items-center justify-between p-4 bg-secondary'>
                 <TouchableOpacity onPress={() => router.back()}>
@@ -257,6 +284,17 @@ const GigDetails = () => {
                             <Text className='text-white text-center font-semibold text-xl '>Appy for Gig</Text>
                         </TouchableOpacity>
                     )
+                )}
+                {uid === gigUid && (
+                    <View className='w-full flex flex-row items-center justify-between'>
+                        <TouchableOpacity className='w-[90%] bg-tertiary py-2 rounded-lg'
+                             onPress={() => router.push(`/(context)/edit_post/${id}`)}>
+                            <Text className='text-white text-center font-semibold text-xl '>Edit</Text>
+                        </TouchableOpacity> 
+                        <TouchableOpacity className='w-[9%] items-center bg-red-500 py-2 rounded-lg' onPress={() => {setShowDelete(true)}}>
+                            <MaterialIcons name="delete" size={24} color="white" />
+                        </TouchableOpacity> 
+                    </View>
                 )}
             </View>
         </SafeAreaView>

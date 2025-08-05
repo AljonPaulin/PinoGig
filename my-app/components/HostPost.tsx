@@ -1,5 +1,5 @@
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Image, Alert } from 'react-native'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Fontisto from '@expo/vector-icons/Fontisto';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
@@ -7,9 +7,10 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Gig } from '@/types/gig';
 import { router } from 'expo-router';
 import { postGig } from '@/lib/supabase/gigs';
+import { supabase } from '@/lib/supabase';
 
 
-const HostPost = () => {
+const HostPost = ({ data, type } : any) => {
     const [ title , setTitle ] = useState("");
     const [ description , setDescription ] = useState("");
     const [ location , setLocation ] = useState("");
@@ -28,6 +29,20 @@ const HostPost = () => {
     const [ loadReq, setLoadReq] = useState(false);
     const [ tags, setTags] = useState<string[]>(['']);
     const [ requirements , setRequirements] =  useState<string[]>(['']);
+
+    useEffect(() => {
+        if (data) {
+          setTitle(data.title || "");
+          setDescription(data.description || "");
+          setPlace(data.place || "");
+          setLocation(data.location || "");
+          setAmount(String(data.rate) || "");
+          setPeople(String(data.people)|| "");
+          setTags(data.tags || []);
+          setRequirements(data.requirements || []);
+        }
+        
+    }, [data]);
 
 
   
@@ -95,6 +110,49 @@ const HostPost = () => {
         }else{ 
             console.log(`Sucess $€{data}`);
             router.back();
+        }
+        setLoading(false)
+    }
+
+    const handleUpdateGig = async () => {
+        setLoading(true)
+        const diffInMs = endTime.getTime() - startTime.getTime();
+        const diffInHours = diffInMs / (1000 * 60 * 60); 
+
+        const gig: Gig = {
+            title,
+            description,
+            place,
+            location,
+            rate: Number(amount),
+            people: Number(people),
+            date,
+            startTime: startTime.toLocaleTimeString([], {
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true,
+            }),
+            endTime: endTime.toLocaleTimeString([], {
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true,
+            }),
+            hours: diffInHours,
+            tags,
+            requirements,
+          };
+        
+        const { error } = await supabase
+          .from('gigs')
+          .update(gig)
+          .eq('id', data.id)
+
+        if(error){
+            Alert.alert(error.message)
+            console.log(error.message);
+        }else{ 
+            console.log(`Sucess $€{data}`);
+            router.push(`/(context)/post/${data.id}`)
         }
         setLoading(false)
     }
@@ -301,9 +359,15 @@ const HostPost = () => {
                 <Text className='font-semibold text-white'>Venue Photo</Text>
             </TouchableOpacity>
         </View>
-        <TouchableOpacity disabled={loading} className='bg-tertiary p-2 rounded-md m-1 mt-4' onPress={() => handlePostGig()}>
-                    <Text className='text-primary text-center text-xl font-bold'>Post Now</Text>
-        </TouchableOpacity>
+        {type !== 'edit' ? (
+            <TouchableOpacity disabled={loading} className='bg-tertiary p-2 rounded-md m-1 mt-4' onPress={() => handlePostGig()}>
+                <Text className='text-primary text-center text-xl font-bold'>Post Now</Text>
+            </TouchableOpacity>
+        ) : (
+            <TouchableOpacity disabled={loading} className='bg-tertiary p-2 rounded-md m-1 mt-4' onPress={() => handleUpdateGig()}>
+                <Text className='text-primary text-center text-xl font-bold'>Update Now</Text>
+            </TouchableOpacity>
+        )}
         
         
         {show && (

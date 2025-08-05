@@ -55,7 +55,7 @@ const Chats = () => {
         for (const item of allMessages) {
           const name = item.users?.name;
           const conversationID = item.conversation_id;
-      
+
           if (!name || !conversationID) continue;
       
           if (!seenNames.has(name)) {
@@ -138,7 +138,7 @@ const Chats = () => {
               showsVerticalScrollIndicator={false}
               data={chatsData}
               renderItem={({item, index }) => 
-                <TouchableOpacity className='flex flex-row items-center bg-secondary rounded-lg mx-2 mt-2' onPress={() => handleReadMsg(item.sender_id, item.receiver_id)}>
+                <TouchableOpacity className={`flex flex-row items-center rounded-lg mx-2 mt-2 ${item.is_read === false ? "bg-secondary" : ""}`} onPress={() => handleReadMsg(item.sender_id, item.receiver_id)}>
                 <View className='w-[20%]'>
                     <Image source={require('../../assets/images/react-logo.png')} className='size-16 bg-gray-500 rounded-full m-3'/>
                 </View>

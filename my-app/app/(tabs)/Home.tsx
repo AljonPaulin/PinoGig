@@ -17,6 +17,7 @@ const Home = () => {
   const [ gigs, setGigs] = useState(0);
   const [ musicians, setMusicians] = useState(0);
   const [ comedians, setComedians] = useState(0);
+  const [ notifications, setNotifications] = useState(0);
   const { uid } = useCurrentUser();
   const router = useRouter();
 
@@ -30,6 +31,16 @@ const Home = () => {
           Alert.alert(error.message);
         }else{
           setData(data)
+        }
+      }
+      const loadNotifications = async () => {
+        const { data, error } = await supabase.from('notifications').select().eq('uuid', uid).eq('is_read', false)
+        if(error) {
+          Alert.alert(error.message)
+        }else if(data.length !== 0){
+          setNotifications(data.length)
+        }else{
+          setNotifications(0)
         }
       }
       const loadAll = async () => {
@@ -69,6 +80,7 @@ const Home = () => {
         }else{
           if(countSinger !== null) setMusicians(countSinger)
           if(countGigComedian !== null) setComedians(countGigComedian)
+            
         }
 
     }
@@ -76,6 +88,7 @@ const Home = () => {
       loadData()
       loadAll()
       loadCategory()
+      loadNotifications()
     }, [uid])
   )
   return (
@@ -89,10 +102,15 @@ const Home = () => {
           </View>
         </View>
         <View className='flex flex-row flex-wrap gap-2 items-center'>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push('/(context)/Notification')}>
               <Ionicons name="notifications" size={24} color="#1d7fe0" />
+              {notifications !== 0 && (
+                <View className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-xl items-center justify-center">
+                  <Text className="text-white text-xs font-bold">{notifications}</Text>
+                </View>
+              )}
             </TouchableOpacity>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push('/(tabs)/Profile')}>
               <Image
                 className='size-8 bg-[#082644] rounded-full'
                 source={require('../../assets/images/react-logo.png')} />

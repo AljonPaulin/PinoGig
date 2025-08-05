@@ -3,4 +3,5 @@ export interface Chats{
     receiver_id: string,
     message: string,
     conversation_id: string | undefined
+    is_read: boolean
 }
