@@ -4,9 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, useFocusEffect } from 'expo-router';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
-import { supabase } from '@/lib/supabase';
-import ArtistBox from '@/components/ArtistBox';
 import PostBox from '@/components/PostBox';
+import { getAllUsersGigs } from '@/lib/supabase/gigs';
 
 const Posts = () => {
     const { uid } = useCurrentUser();
@@ -19,7 +18,7 @@ const Posts = () => {
             setShowContent(false)
 
             const loadPost = async () => {
-                const { data, error } = await supabase.from('gigs').select().eq('uuid', uid)
+                const { data, error } = await getAllUsersGigs(uid)
                 if(error){
                     Alert.alert(error.message)
                 }else{

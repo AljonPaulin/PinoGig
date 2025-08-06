@@ -6,7 +6,7 @@ import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Gig } from '@/types/gig';
 import { router } from 'expo-router';
-import { postGig } from '@/lib/supabase/gigs';
+import { postGig, updateGig } from '@/lib/supabase/gigs';
 import { supabase } from '@/lib/supabase';
 
 
@@ -76,85 +76,96 @@ const HostPost = ({ data, type } : any) => {
 
     const handlePostGig = async () => {
         setLoading(true)
-        const diffInMs = endTime.getTime() - startTime.getTime();
-        const diffInHours = diffInMs / (1000 * 60 * 60); 
+        if(title === '' || description === '' || place === '' ||
+            location === '' || amount === '' || people === '' || data === ''
+            || tags.length === 0 || requirements.length === 0){
+              setLoading(false)
+              return Alert.alert('Fill All fields')
+        }else{
+            const diffInMs = endTime.getTime() - startTime.getTime();
+            const diffInHours = diffInMs / (1000 * 60 * 60); 
 
-        const gig: Gig = {
-            title,
-            description,
-            place,
-            location,
-            rate: Number(amount),
-            people: Number(people),
-            date,
-            startTime: startTime.toLocaleTimeString([], {
-                hour: 'numeric',
-                minute: '2-digit',
-                hour12: true,
-            }),
-            endTime: endTime.toLocaleTimeString([], {
-                hour: 'numeric',
-                minute: '2-digit',
-                hour12: true,
-            }),
-            hours: diffInHours,
-            tags,
-            requirements,
-          };
+            const gig: Gig = {
+                title,
+                description,
+                place,
+                location,
+                rate: Number(amount),
+                people: Number(people),
+                date,
+                startTime: startTime.toLocaleTimeString([], {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true,
+                }),
+                endTime: endTime.toLocaleTimeString([], {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true,
+                }),
+                hours: diffInHours,
+                tags,
+                requirements,
+            };
 
-        const { error } = await postGig(gig);
+            const error = await postGig(gig);
 
-        if(error){
-            Alert.alert(error.message)
-            console.log(error.message);
-        }else{ 
-            console.log(`Sucess $€{data}`);
-            router.back();
+            if(error){
+                Alert.alert(error.message)
+                console.log(error.message);
+            }else{ 
+                console.log(`Sucess $€{data}`);
+                router.back();
+            }
+            setLoading(false)
         }
-        setLoading(false)
     }
 
     const handleUpdateGig = async () => {
         setLoading(true)
-        const diffInMs = endTime.getTime() - startTime.getTime();
-        const diffInHours = diffInMs / (1000 * 60 * 60); 
+        if(title === '' || description === '' || place === '' ||
+            location === '' || amount === '' || people === '' || data === ''
+            || tags.length === 0 || requirements.length === 0){
+              setLoading(false)
+              return Alert.alert('Fill All fields')
+        }else{
+            const diffInMs = endTime.getTime() - startTime.getTime();
+            const diffInHours = diffInMs / (1000 * 60 * 60); 
 
-        const gig: Gig = {
-            title,
-            description,
-            place,
-            location,
-            rate: Number(amount),
-            people: Number(people),
-            date,
-            startTime: startTime.toLocaleTimeString([], {
-                hour: 'numeric',
-                minute: '2-digit',
-                hour12: true,
-            }),
-            endTime: endTime.toLocaleTimeString([], {
-                hour: 'numeric',
-                minute: '2-digit',
-                hour12: true,
-            }),
-            hours: diffInHours,
-            tags,
-            requirements,
-          };
-        
-        const { error } = await supabase
-          .from('gigs')
-          .update(gig)
-          .eq('id', data.id)
+            const gig: Gig = {
+                title,
+                description,
+                place,
+                location,
+                rate: Number(amount),
+                people: Number(people),
+                date,
+                startTime: startTime.toLocaleTimeString([], {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true,
+                }),
+                endTime: endTime.toLocaleTimeString([], {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true,
+                }),
+                hours: diffInHours,
+                tags,
+                requirements,
+            };
+            
+            const error = await updateGig(gig, data.id)
 
-        if(error){
-            Alert.alert(error.message)
-            console.log(error.message);
-        }else{ 
-            console.log(`Sucess $€{data}`);
-            router.push(`/(context)/post/${data.id}`)
+            if(error){
+                Alert.alert(error.message)
+                console.log(error.message);
+            }else{ 
+                console.log(`Sucess $€{data}`);
+                router.push(`/(context)/post/${data.id}`)
+            }
+            setLoading(false)
         }
-        setLoading(false)
     }
 
     const handleTagChange = (text: string, index: number) => {

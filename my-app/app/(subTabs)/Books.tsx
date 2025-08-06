@@ -3,7 +3,8 @@ import React, { useCallback, useState } from "react";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router, useFocusEffect } from "expo-router";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
-import { supabase } from "@/lib/supabase";
+import { getUserType } from "@/lib/supabase/users";
+import { getAllAcceptedBooking, getAllBooking, getAllCancelledBooking, updateBookingStatus } from "@/lib/supabase/booking";
 
 const Books = () => {
     const { uid } = useCurrentUser();
@@ -32,23 +33,23 @@ const Books = () => {
             if(!uid) return
 
             const loadData = async () => {
-                const { data, error} = await supabase.from('users').select('type').eq('uuid', uid)
+                const { data, error} = await getUserType(uid)
                 if(error){
                     Alert.alert(error.message)
                 }else{
-                    if(data.length !== 0){
-                        setType(data[0].type);
+                    if(data !== null){
+                        data.length !== 0 && setType(data[0].type);
                     }
                 }
 
-                const {data: bookingAccepted , error: errorBookingAccepted } = await supabase.from('Booking').select().eq('receiver_uid', uid).eq('is_Accepted', true)
-                const {data: bookingCancelled , error: errorBookingCancelled } = await supabase.from('Booking').select().eq('receiver_uid', uid).eq('is_Accepted', false)
-                const {data: booking , error: errorBooking } = await supabase.from('Booking').select().eq('receiver_uid', uid).is('is_Accepted', null)
+                const { bookingAccepted, errorBookingAccepted } = await getAllAcceptedBooking(uid);
+                const { bookingCancelled, errorBookingCancelled } = await getAllCancelledBooking(uid);
+                const { booking, errorBooking } = await getAllBooking(uid);
                 if(errorBookingAccepted || errorBookingCancelled || errorBooking){
-                    if(errorBooking) Alert.alert(errorBooking.message)
-                    if(errorBookingAccepted) Alert.alert(errorBookingAccepted.message)
-                    if(errorBookingCancelled) Alert.alert(errorBookingCancelled.message)
-                } else if (bookingAccepted.length !== 0 || bookingCancelled.length !== 0 || booking.length !== 0) {
+                    errorBooking && Alert.alert(errorBooking.message)
+                    errorBookingAccepted && Alert.alert(errorBookingAccepted.message)
+                    errorBookingCancelled && Alert.alert(errorBookingCancelled.message)
+                } else if (bookingAccepted?.length !== 0 || bookingCancelled?.length !== 0 || booking?.length !== 0) {
                     setBookingData(booking)
                     setBookingDataAccepted(bookingAccepted)
                     setBookingDataCancelled(bookingCancelled);
@@ -63,9 +64,9 @@ const Books = () => {
     }, [uid]))
 
     const handleRequest = async (sender_uid: string, accept: boolean) => {
-        const { error } = await supabase.from('Booking').update({ is_Accepted : accept}).eq('sender_uid', sender_uid).eq('receiver_uid', uid)
-        if(error){
-            Alert.alert(error.message)
+        const errorBookingUpdate = updateBookingStatus(sender_uid, accept, uid)
+        if(errorBookingUpdate !== null){
+            console.log(errorBookingUpdate);
         }else{
             if(accept){
                 router.push({
@@ -75,7 +76,6 @@ const Books = () => {
             }else{
                 router.push('/(subTabs)/History')
             }
-           
         }
     }
     

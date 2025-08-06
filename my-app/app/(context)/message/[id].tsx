@@ -2,13 +2,14 @@ import { View, Text, Alert, TouchableOpacity, ScrollView, TextInput, KeyboardAvo
 import React, { useCallback, useEffect, useState } from 'react'
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { useCurrentUser } from '@/hooks/useCurrentUser';
-import { supabase } from '@/lib/supabase';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Chats } from '@/types/chat';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { getTimeAgo } from '@/utils/timeAgo';
+import { getAllConversationID, getConversationID, sendChat, updateChatStatus } from '@/lib/supabase/chats';
+import { getUserName } from '@/lib/supabase/users';
 
 const Chatting = () => {
     const { id, type, root} = useLocalSearchParams();
@@ -54,13 +55,13 @@ const Chatting = () => {
                   srcUID = 'sender_id'
                 }
                 
-                const { data, error } = await supabase.from('messages').select('conversation_id').eq(srcUID, uid).eq(srcID, id)
+                const { data, error } = await getConversationID(srcUID, uid, srcID, id)
 
                 if (isActive) {
                     if (error) {
                         console.log('loadloadConversationID error');
                         Alert.alert(error.message);
-                    } else if(data?.length > 0) {
+                    } else if(data !== null && data.length > 0) {
                         const conversationId = data[0].conversation_id
                         setConversationID(conversationId)
                         await loadChats(conversationId)
@@ -72,24 +73,24 @@ const Chatting = () => {
             }
 
             const loadReceiver = async () => {
-                const { data, error } = await supabase.from('users').select('name').eq('uuid', id)
+                const { data, error } = await getUserName(id)
 
                 if (isActive) {
                     if (error) {
                         console.log('loadReceiver error');                       
                         Alert.alert(error.message);
                     } else {
-                        setReceiverUser(data[0].name)
+                        setReceiverUser(data?.[0].name)
                     }
                 }
             }
             const loadChats = async (conversationId : string) => {
-                const { data, error } = await supabase.from('messages').select().eq('conversation_id', conversationId).order('id', { ascending: false })
+                const { data, error } = await getAllConversationID(conversationId)
                 if (isActive) {
                     if (error) {
                       console.log('loadChats error');
                       Alert.alert(error.message);
-                    } else {
+                    } else if (data !== null){
                         if(data.length !== 0) {
                             setConversationData(data);
                             setShowContent(true)
@@ -104,15 +105,14 @@ const Chatting = () => {
                             }
                             await Promise.all(tasks);
                         }
+                    } else {
+                      console.error('Data is null');
                     }
                 }
             }
 
             const readChats = async (id: string) => {
-              const { error } = await supabase
-                .from('messages')
-                .update({ is_read: true })
-                .eq('conversation_id', id)
+              const error  = await updateChatStatus(id)
 
               if(error) Alert.alert(error.message)
             }
@@ -141,7 +141,7 @@ const Chatting = () => {
             conversation_id: conversationID || undefined,
             is_read: false
           }
-          const { error } = await supabase.from('messages').insert(chats)
+          const error  = await sendChat(chats)
           if(error){
               Alert.alert(error.message)
           }else{

@@ -25,11 +25,11 @@ const GigBox = (props: any) => {
         </View>
         <View className='flex flex-row items-center'>
             <Ionicons name="time" size={16} color="#1d7fe0" />
-            <Text className='text-[#1d7fe0] font-bold'> {props.data.hours} hours</Text>
+            <Text className='text-[#1d7fe0] font-bold'>{Math.round(props.data.hours)} hours</Text>
         </View>
-        <View  className='flex flex-row items-center'>
-            <Ionicons name="people" size={16} color="#1d7fe0" />
-            <Text className='text-[#1d7fe0] font-bold'> {props.data.people} people</Text>
+        <View className='flex flex-row items-center'>
+            <Ionicons name="people" size={16} color="#1d7fe0"/>
+            <Text className='text-[#1d7fe0] font-bold'>{props.data.people} people</Text>
         </View>
       </View>
     </TouchableOpacity>

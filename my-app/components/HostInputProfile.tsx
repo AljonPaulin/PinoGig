@@ -1,10 +1,10 @@
 import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import { Host } from '@/types/host';
-import { supabase } from '@/lib/supabase';
 import { router } from 'expo-router';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { User } from '@/types/user';
+import { postHostProfile, postUser, updateHostProfile } from '@/lib/supabase/users';
 
 const HostInputProfile = ({ data, mode } : any) => {
     const [ name, setName ] = useState("");
@@ -26,47 +26,58 @@ const HostInputProfile = ({ data, mode } : any) => {
     const handleSaveProfile = async () => {
         setLoading(true)
         if (!email || !uid) return;
-
-        const host: Host = {
-            name,
-            location,
-            phone,
-        }
-        const user: User = {
-            name,
-            type: 'host',
-            email: email,
-            uuid: uid,
-        }
-        const { error: hostError } = await supabase.from('profileHost').insert(host);
-        const { error: userError } = await supabase.from('users').insert(user);
-
-        if (hostError || userError) {
-            if (hostError) Alert.alert(hostError.message);
-            if (userError) Alert.alert(userError.message);
+        if(name === '' || location === '' || phone === '' || email === ''){
+            setLoading(false)
+            return Alert.alert('Fill All fields')
         }else{
-            console.log('Success in creating profile');
-            router.push('/(tabs)/Profile')
+            const host: Host = {
+                email,
+                name,
+                location,
+                phone,
+            }
+            const user: User = {
+                name,
+                type: 'host',
+                email: email,
+                uuid: uid,
+            }
+            const hostError  = await postHostProfile(host);
+            const  userError = await postUser(user);
+    
+            if (hostError || userError) {
+                hostError && Alert.alert(hostError.message);
+                userError && Alert.alert(userError.message);
+            }else{
+                console.log('Success in creating profile');
+                router.push('/(tabs)/Profile')
+            }
+            setLoading(false)
         }
-        setLoading(false)
     }
 
     const handleUpdateProfile = async () => {
         setLoading(true)
-        const host: Host = {
-            name,
-            location,
-            phone,
-        }
-        const { error } = await supabase.from('profileHost').update(host).eq('id', data.id);
-
-        if(error){
-            Alert.alert(error.message)
+        if(name === '' || location === '' || phone === '' || email === ''){
+              setLoading(false)
+              return Alert.alert('Fill All fields')
         }else{
-            console.log('Success in updating profile');
-            router.push('/(tabs)/Profile')
+            const host: Host = {
+                email,
+                name,
+                location,
+                phone,
+            }
+            const hostError  = await updateHostProfile(host, data.id);
+    
+            if(hostError){
+                Alert.alert(hostError.message)
+            }else{
+                console.log('Success in updating profile');
+                router.push('/(tabs)/Profile')
+            }
+            setLoading(false)
         }
-        setLoading(false)
     }
 
 

@@ -1,15 +1,16 @@
 import { View, Text, TouchableOpacity, ScrollView, Image, Alert } from 'react-native'
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useState } from 'react'
 import FontAwesome from '@expo/vector-icons/FontAwesome'
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons'
 import GigBox from '@/components/GigBox'
 import Ionicons from '@expo/vector-icons/Ionicons'
-import { fetchData } from '@/lib/supabase/gigs'
+import { getNumberOfGigs, getTopRecentGigs } from '@/lib/supabase/gigs'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
-import { supabase } from '@/lib/supabase'
+import { loadNewNotification } from '@/lib/supabase/notification'
+import { getNumberBaseOnCategory, getNumberOfArtist } from '@/lib/supabase/artist'
 
 const Home = () => {
   const [data, setData] = useState<any[]|null>(null);
@@ -23,51 +24,54 @@ const Home = () => {
 
   useFocusEffect(
     useCallback(() => {
-      if(!uid) return
+
+      if(!uid) return // return if user id  is not found
+
+      //Display top three most recent gig post
       const loadData = async () => {
-        const {data, error} = await fetchData();
-
-        if(error){
-          Alert.alert(error.message);
-        }else{
+        try {
+          const data = await getTopRecentGigs();
           setData(data)
+        } catch (err) {
+          console.error(err);
         }
       }
-      const loadNotifications = async () => {
-        const { data, error } = await supabase.from('notifications').select().eq('uuid', uid).eq('is_read', false)
-        if(error) {
-          Alert.alert(error.message)
-        }else if(data.length !== 0){
-          setNotifications(data.length)
-        }else{
-          setNotifications(0)
-        }
-      }
-      const loadAll = async () => {
-        const { count : countArtist, error: artistError} = await supabase
-            .from('profileArtist')
-            .select('*', { count: 'exact', head: true })
 
-        const { count : countGig, error: gigError} = await supabase
-            .from('gigs')
-            .select('*', { count: 'exact', head: true })
+      //Display the number of unread notification
+      const loadNotification = async () => {
+        try {
+            const data = await loadNewNotification(uid)
+            if(data.length !== 0){
+              setNotifications(data.length)}else{
+                setNotifications(0)
+              }
+        } catch (err) {
+            console.error(err);
+        }
+      }
+
+      // Display the number of artist and post in the system
+      const loadAll = async () => {
+        const { countArtist,artistError} = await getNumberOfArtist(); // return number of artists
+        const { countGig, gigError} = await getNumberOfGigs(); // return number of gigs
 
         if(artistError || gigError){
-          if(artistError) Alert.alert(artistError.message);
-          if(gigError) Alert.alert(gigError.message)
+          artistError && Alert.alert(artistError.message);
+          gigError && Alert.alert(gigError.message)
         }else{
-          if(countArtist !== null) setArtists(countArtist)
-          if(countGig !== null) setGigs(countGig)
+          countArtist !== null && setArtists(countArtist)
+          countGig !== null  && setGigs(countGig)
         }
+
       }
+
+      // Display the number of singer, comedian and more
       const loadCategory = async () => {
         const categories = ['Singer', 'Comedian'];
-
         const results = await Promise.all(
-          categories.map(category => 
-            supabase.from('gig_applications').select('*',{count: 'exact', head: true }).eq('category', category)
-          )
+          categories.map(category => getNumberBaseOnCategory(category))
         )
+
         const [singerResult, comedianResult] = results;
         const countSinger = singerResult.count;
         const countGigComedian = comedianResult.count;
@@ -80,15 +84,13 @@ const Home = () => {
         }else{
           if(countSinger !== null) setMusicians(countSinger)
           if(countGigComedian !== null) setComedians(countGigComedian)
-            
         }
-
     }
 
       loadData()
       loadAll()
       loadCategory()
-      loadNotifications()
+      loadNotification()
     }, [uid])
   )
   return (

@@ -26,3 +26,7 @@ export async function getBucket() {
         })
     return { data, error};
 }
+
+export const createUrls = async (name: any) => {
+    return await supabase.storage.from('assets').createSignedUrl(`gig/${name}`, 60)
+}

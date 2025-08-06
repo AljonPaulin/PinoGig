@@ -1,21 +1,20 @@
-import { View, Text, TouchableOpacity, ScrollView, Alert, FlatList } from 'react-native'
-import React, { useCallback, useEffect, useState } from 'react'
+import { View, Text, TouchableOpacity, FlatList } from 'react-native'
+import React, { useCallback, useState } from 'react'
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import PostBox from '@/components/PostBox';
-import { fetchAllAppicationGig, fetchAllData } from '@/lib/supabase/gigs';
+import { fetchAllAppicationGigs, getAllGigs } from '@/lib/supabase/gigs';
 import ArtistBox from '@/components/ArtistBox';
 import Entypo from '@expo/vector-icons/Entypo';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { supabase } from '@/lib/supabase';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
-import AntDesign from '@expo/vector-icons/AntDesign';
+import { getNumberOfUnreadChat } from '@/lib/supabase/chats';
 
 const Gigs = () => {
   const router = useRouter();
   const { uid } = useCurrentUser();
   const { main, filterData } = useLocalSearchParams();
-  const [data, setData] = useState<any[]|null>(null);
-  const [dataApplication, setDataApplication] = useState<any[]|null>(null);
+  const [ data, setData] = useState<any[]|null>(null);
+  const [ dataApplication, setDataApplication] = useState<any[]|null>(null);
   const [ orginalData, setOrginalData] = useState<any[]|null>(null);
   const [ isHost , setIsHost ] = useState(true);
   const [ filter, setFilter ] = useState('all');
@@ -23,61 +22,56 @@ const Gigs = () => {
 
   useFocusEffect(
     useCallback(() => {
-
         if(!uid) return
-
-        const loadData = async () => {
-          const {data, error} = await fetchAllData();
-
-          main ? setIsHost(false) : setIsHost(true)
-
-          if(error){
-            Alert.alert(error.message);
-          }else{
-            setData(data)
+        main ? setIsHost(false) : setIsHost(true)
+        
+        // Display all post gigs
+        const loadAllGigs = async () => {
+          try {
+            const data = await getAllGigs();  
+            setData(data)  
+          } catch (err) {
+            console.error(err);
           }
         }
 
+        // Display a number of unread chats
         const loadNewChats = async () => {
-          const { data: msgReceiver, error: errReceiver } = await supabase
-              .from('messages')
-              .select()
-              .eq('receiver_id', uid)
-              .eq('is_read', false)
-
-          if(errReceiver){
-            if(errReceiver) Alert.alert(errReceiver.message)
-            console.log('loadNewChats error');
-            return;
-          }else{
-            setChats(msgReceiver.length)
+          try {
+            const data = await getNumberOfUnreadChat(uid)
+            setChats(data.length)
+          } catch (err) {
+            console.error(err);
           }
         }
-
-        const loadDataAppication = async () => {
-          const {data, error} = await fetchAllAppicationGig();
-
-          if(error){
-            Alert.alert(error.message);
-          }else{
+        
+        //Display all services that artist provide to their customers
+        const loadAllServices = async () => {
+          try {
+            const data = await fetchAllAppicationGigs();
             setDataApplication(data)
             setOrginalData(data)
             if (filterData) {
               const temp = filterData.toString()
               handleFilter(temp)
             }
+          } catch (err) {
+             console.error(err);
           }
         }
 
-        loadData()
+        loadAllGigs()
         loadNewChats()
-        loadDataAppication()
+        loadAllServices()
+
     }, [uid, filterData, main])
   );
-
+  // Handle the filter for Gig and Applicants
   const handleFilterMain = (type: string) => {
     (type === 'artist') ? setIsHost(false) : setIsHost(true)
   };
+
+  //handle filter for different types of services offered
   const handleFilter = (type: any) => {
       switch(type){
         case 'all':{
@@ -117,7 +111,7 @@ const Gigs = () => {
         <View className='w-full flex flex-row items-center justify-between p-4 bg-secondary'>
             <Text className='text-2xl text-white font-bold'>Gigs</Text>
             <View className='flex flex-row flex-wrap gap-7'>
-              {isHost ? (
+              {!main ? (
                 <TouchableOpacity onPress={() => router.push('/(context)/Posts')}>
                  <MaterialIcons name="post-add" size={28} color="#1d7fe0" />
                 </TouchableOpacity>

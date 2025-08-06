@@ -8,8 +8,8 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import ArtistPost from '@/components/ArtistPost';
 import HostPost from '@/components/HostPost';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
-import { supabase } from '@/lib/supabase';
 import CustomAlert from '@/components/CustomAlert';
+import { getUserType } from '@/lib/supabase/users';
 
 const Post = () => {
   const router = useRouter();
@@ -24,21 +24,20 @@ const Post = () => {
         if (loading || !uid) return;
 
         const loadTab = async () => {
-            const { data, error } = await supabase
-                .from('users')
-                .select('type')
-                .eq('uuid', uid )
-
-            if(error){
-                Alert.alert(error.message)
-            }else{
-              if(data.length === 0){
-                setShowErrorProfile(true)
-              }else{
-                 data[0].type === 'artist' && setType('artist') 
-              }
-            }
+               const { data, error} = await getUserType(uid)
+               if(error){
+                 Alert.alert(error.message)
+               }else{
+                  if(data !== null ){
+                    if(data.length === 0){
+                      setShowErrorProfile(true)
+                    }else{
+                      data[0].type === 'artist' && setType('artist') 
+                    }
+                  }
+               }
         }
+
         loadTab();
     }, [uid, loading])
   );

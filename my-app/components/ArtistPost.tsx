@@ -2,7 +2,6 @@ import { View, Text, TextInput, TouchableOpacity, Alert} from 'react-native'
 import { SelectList } from 'react-native-dropdown-select-list'
 import { MultipleSelectList } from 'react-native-dropdown-select-list'
 import React, { useState } from 'react'
-import { supabase } from '@/lib/supabase'
 import { Application } from '@/types/application'
 import { router } from 'expo-router'
 import { postApplicationGig } from '@/lib/supabase/gigs'
@@ -42,27 +41,31 @@ const ArtistPost = () => {
   ]
 
   const handlePost = async () => {
-    setLoading(true)
+      setLoading(true)
+      if(stageName === '' || description === '' || category === '' ||
+        experience === '' || rate === '' || available.length === 0 || travel === ''){
+          setLoading(false)
+          return Alert.alert('Fill All fields')
+      }else{
+         const application : Application = {
+          stageName,
+          description,
+          category,
+          experience,
+          rate: Number(rate),
+          available,
+          travel
+        }
+        const error = await postApplicationGig(application)
 
-    const application : Application = {
-        stageName,
-        description,
-        category,
-        experience,
-        rate: Number(rate),
-        available,
-        travel
-    }
-
-    const { error } = await postApplicationGig(application)
-    
-    if(error){
-      Alert.alert(error.message)
-    }else{
-      console.log("Success adding application");
-      router.back();
-    }
-    setLoading(false)
+        if(error){
+          Alert.alert(error.message)
+        } else{
+          console.log("Success adding application");
+          router.back();
+        }
+        setLoading(false)
+      }
   }
 
 

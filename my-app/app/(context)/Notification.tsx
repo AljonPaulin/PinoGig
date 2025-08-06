@@ -4,9 +4,8 @@ import Ionicons from '@expo/vector-icons/Ionicons'
 import { router, useFocusEffect } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
-import { supabase } from '@/lib/supabase'
 import { getTimeAgo } from '@/utils/timeAgo'
-import Entypo from '@expo/vector-icons/Entypo'
+import { getAllNotification, updateNotificationStatus } from '@/lib/supabase/notification'
 
 const Notification = () => {
   const { uid } = useCurrentUser();
@@ -19,10 +18,10 @@ const Notification = () => {
         setShowContent(false)
         
         const loadContent = async () => {
-          const { data, error } = await supabase.from('notifications').select().eq('uuid', uid).order('id', { ascending: false })
+          const { data, error } = await getAllNotification(uid) 
           if(error) {
             Alert.alert(error.message)
-          }else if(data.length !== 0){
+          }else if(data?.length !== 0){
             setNotificationData(data)
             setShowContent(true)
           }else{
@@ -39,12 +38,8 @@ const Notification = () => {
   });
 
   const readNotification = async (id : number) => {
-    const { error } = await supabase
-      .from('notifications')
-      .update({ is_read: true })
-      .eq('id', id)
-
-    if(error) Alert.alert(error.message)
+    const error = await updateNotificationStatus(id)
+    error && Alert.alert(error.message)
   }
 
   const handleNotificationRoute = (type: string, id: number) => {

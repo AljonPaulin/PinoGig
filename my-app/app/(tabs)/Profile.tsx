@@ -1,18 +1,16 @@
-import { View, Text, ScrollView, TouchableOpacity, Image, Alert, ActivityIndicator } from 'react-native'
+import { View, Text, TouchableOpacity, Alert, ActivityIndicator } from 'react-native'
 import React, { useCallback, useEffect, useState } from 'react'
 import { useFocusEffect, useRouter } from 'expo-router'
 import Ionicons from '@expo/vector-icons/Ionicons'
-import Entypo from '@expo/vector-icons/Entypo';
 import ArtistProfile from '@/components/ArtistProfile';
-import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { getUID, getUser } from '@/lib/supabase/auth';
 import { getProfile } from '@/lib/supabase/profile';
 import HostProfile from '@/components/HostProfile';
 import DeleteAlert from '@/components/DeleteAlert';
-import { supabase } from '@/lib/supabase';
 import CustomAlert from '@/components/CustomAlert';
+import { deleteUserArtist, deleteUserHost } from '@/lib/supabase/users';
 
 
 const Profile = () => {
@@ -77,16 +75,8 @@ const Profile = () => {
   const deleteProfile = async ( typeProfile: string) => {
     if(dataProfile === null) return
 
-    const response = await supabase
-        .from('users')
-        .delete()
-        .eq('uuid', dataProfile[0].uuid)
-    
     if(typeProfile === 'host'){
-      const response = await supabase
-        .from('profileHost')
-        .delete()
-        .eq('uuid', dataProfile[0].uuid)
+      const response = await deleteUserHost(dataProfile[0].uuid)
 
       if(response.status === 204){
           console.log('Successful delete');
@@ -98,10 +88,7 @@ const Profile = () => {
           console.log('failed');
       }
     }else{
-      const response = await supabase
-        .from('profileArtist')
-        .delete()
-        .eq('uuid', dataProfile[0].uuid)
+      const response = await deleteUserArtist(dataProfile[0].uuid)
 
       if(response.status === 204){
           console.log('Successful delete');

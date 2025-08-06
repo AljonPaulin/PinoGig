@@ -7,14 +7,15 @@ import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Gig } from '@/types/gig';
-import { fetchGig } from '@/lib/supabase/gigs';
-import { getBucket, getGigPic } from '@/lib/supabase/storage';
-import { supabase } from '@/lib/supabase';
+import { deleteGig, fetchGig } from '@/lib/supabase/gigs';
+import { createUrls, getBucket, getGigPic } from '@/lib/supabase/storage';
 import { Booking } from '@/types/booking';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import DeleteAlert from '@/components/DeleteAlert';
 import { getProfile } from '@/lib/supabase/profile';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { getUserByID } from '@/lib/supabase/users';
+import { checkForApplication, deleteBooking, postBooking } from '@/lib/supabase/booking';
 const GigDetails = () => {
     const {id} = useLocalSearchParams();
     const { uid } = useCurrentUser();
@@ -41,7 +42,7 @@ const GigDetails = () => {
                 setGigUid(data?.[0].uuid);
             }
 
-            const { data : hostData, error: hostError} = await supabase.from('users').select().eq('uuid', data?.[0].uuid);
+            const { hostData, hostError} = await getUserByID(data?.[0].uuid) 
             if(hostError){
                 Alert.alert(hostError.message)
             }else{
@@ -61,11 +62,11 @@ const GigDetails = () => {
             }
         }
         const loadBooking = async (receiver_uid: string) => {
-            const { data, error } = await supabase.from('Booking').select('id').eq('sender_uid', uid).eq('receiver_uid', receiver_uid);
+            const { data, error } = await checkForApplication(uid, receiver_uid)
             if(error){
                 Alert.alert(error.message)
             }else{
-                if(data.length !== 0){
+                if(data?.length !== 0){
                     setIsApplied(true)
                 }else{
                     console.log('not applied yet')
@@ -81,7 +82,7 @@ const GigDetails = () => {
                 Alert.alert(error.message)
             }else{
                 if(data){
-                    const urls = (await supabase.storage.from('assets').createSignedUrl(`gig/${data[0].name}`, 60)).data?.signedUrl
+                    const urls = (await createUrls(data[0].name)).data?.signedUrl
                     setGigPic(urls ?? '');
                     console.log("Success Bucket");
                 }
@@ -103,9 +104,7 @@ const GigDetails = () => {
         }
         console.log(booking);
         
-        const { error } = await supabase
-            .from('Booking')
-            .insert(booking)
+        const error  = await postBooking(booking)
         
         if(error){
             Alert.alert(error.message)
@@ -114,10 +113,7 @@ const GigDetails = () => {
         }
     };
     const cancellation = async () => {
-        const response = await supabase
-            .from('Booking')
-            .delete()
-            .eq('sender_uid', uid)
+        const response = await deleteBooking(uid)
         if(response.status === 204){
             console.log('Successfull cancel');
             setIsApplied(false)
@@ -127,10 +123,7 @@ const GigDetails = () => {
     };
 
     const deletePost = async () => {
-        const response = await supabase
-            .from('gigs')
-            .delete()
-            .eq('id', id)
+        const response = await deleteGig(id)
         if(response.status === 204){
             console.log('Successful delete');
             setShowDelete(false)

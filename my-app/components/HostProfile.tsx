@@ -3,7 +3,6 @@ import React from 'react'
 import FontAwesome from '@expo/vector-icons/FontAwesome'
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6'
 import { router } from 'expo-router'
-import FontAwesome5 from '@expo/vector-icons/FontAwesome5'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 
 const HostProfile = (props : any) => {

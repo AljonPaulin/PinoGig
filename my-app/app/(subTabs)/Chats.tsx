@@ -1,12 +1,10 @@
 import { View, Text, TouchableOpacity, Image, Alert, FlatList, ActivityIndicator } from 'react-native'
 import React, { useCallback, useState } from 'react'
-import MaterialIcons from '@expo/vector-icons/MaterialIcons'
-import Entypo from '@expo/vector-icons/Entypo'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import { router, useFocusEffect } from 'expo-router'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
-import { supabase } from '@/lib/supabase'
 import { getTimeAgo } from'@/utils/timeAgo';
+import { getLatestChat, getMessageFromCurrentUser, getMessageToCurrentUser } from '@/lib/supabase/chats'
 
 const Chats = () => {
   const { uid } = useCurrentUser();
@@ -23,26 +21,17 @@ const Chats = () => {
       
       const loadNameMessages = async () => {
 
-        const { data: msgSender, error: errSender} = await supabase
-              .from('messages')
-              .select(`*, users:receiver_id ( name )`)
-              .eq('sender_id', uid)
-              .order('created_at', { ascending: false })
-
-        const { data: msgReceiver, error: errReceiver } = await supabase
-              .from('messages')
-              .select(`*, users:sender_id ( name )`)
-              .eq('receiver_id', uid)
-              .order('created_at', { ascending: false })
+        const { msgSender, errSender} = await getMessageFromCurrentUser(uid)
+        const { msgReceiver, errReceiver } = await getMessageToCurrentUser(uid)
 
         if(errReceiver || errSender){
-          if(errReceiver) Alert.alert(errReceiver.message)
-          if(errSender) Alert.alert(errSender.message)
+          errReceiver && Alert.alert(errReceiver.message)
+          errSender && Alert.alert(errSender.message)
           console.log('loadNameMessages error');
           return;
         }
 
-        if (!msgSender || msgSender.length === 0 && !msgReceiver || msgReceiver.length === 0) {
+        if (!msgSender || msgSender.length === 0 || !msgReceiver || msgReceiver.length === 0) {
           console.log('wala');
           return
         };
@@ -75,19 +64,12 @@ const Chats = () => {
       }
 
       const loadLatestMessages = async (conversationID : string) => {
-        const { data, error } = await supabase
-              .from('messages')
-              .select('*')
-              .eq('conversation_id', conversationID)
-              .order('created_at', { ascending: false })
-              .limit(1);
+        const { data, error } = await getLatestChat(conversationID)
         if(error){
           console.log('loadLatestMessages error');
           Alert.alert(error.message)
         }
-
         return data?.[0] || null;
-
       }
       loadNameMessages();
 

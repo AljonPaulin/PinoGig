@@ -1,11 +1,11 @@
 import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import { MultipleSelectList } from 'react-native-dropdown-select-list';
-import { supabase } from '@/lib/supabase';
 import { Artist } from '@/types/artist';
 import { router } from 'expo-router';
 import { User } from '@/types/user';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { postArtistProfile, postUser, updateArtistProfile } from '@/lib/supabase/users';
 
 const ArtistInputProfile = ({ data, mode } : any) => {
     const [ name, setName ] = useState("");
@@ -46,55 +46,66 @@ const ArtistInputProfile = ({ data, mode } : any) => {
         setLoading(true)
         if (!email || !uid) return;
 
-        const artist: Artist = {
-            name,
-            about,
-            description,
-            location,
-            phone,
-            skills,
-            email
-        }
-        const user: User = {
-            name,
-            type: 'artist',
-            email: email,
-            uuid: uid,
-        }
-        const { error: artistError } = await supabase.from('profileArtist').insert(artist);
-        const { error: userError } = await supabase.from('users').insert(user);
-
-        if (artistError || userError) {
-            if (artistError) Alert.alert(artistError.message);
-            if (userError) Alert.alert(userError.message);
+        if(name === '' || about === '' || description === '' ||
+            location === '' || phone === '' || skills.length === 0 || email === ''){
+              setLoading(false)
+              return Alert.alert('Fill All fields')
         }else{
-            console.log('Success in creating profile');
-            router.push('/(tabs)/Profile')
+            const artist: Artist = {
+                name,
+                about,
+                description,
+                location,
+                phone,
+                skills,
+                email
+            }
+            const user: User = {
+                name,
+                type: 'artist',
+                email: email,
+                uuid: uid,
+            }
+            const artistError = await postArtistProfile(artist);
+            const userError = await postUser(user);
+    
+            if (artistError || userError) {
+                artistError && Alert.alert(artistError.message);
+                userError && Alert.alert(userError.message);
+            }else{
+                console.log('Success in creating profile');
+                router.push('/(tabs)/Profile')
+            }
+            setLoading(false)
         }
-        setLoading(false)
-        
     }
     const handleUpdateProfile = async () => {
         setLoading(true)
         if (!email) return;
-        const artist: Artist = {
-            name,
-            about,
-            description,
-            location,
-            phone,
-            skills,
-            email
-        }
-        const { error } = await supabase.from('profileArtist').update(artist).eq('id', data.id);
-
-        if(error){
-            Alert.alert(error.message)
+        if(name === '' || about === '' || description === '' ||
+            location === '' || phone === '' || skills.length === 0 || email === ''){
+              setLoading(false)
+              return Alert.alert('Fill All fields')
         }else{
-            console.log('Success in updating profile');
-            router.push('/(tabs)/Profile')
+            const artist: Artist = {
+                name,
+                about,
+                description,
+                location,
+                phone,
+                skills,
+                email
+            }
+            const artistError = await updateArtistProfile(artist, data.id)
+    
+            if(artistError){
+                Alert.alert(artistError.message)
+            }else{
+                console.log('Success in updating profile');
+                router.push('/(tabs)/Profile')
+            }
+            setLoading(false)
         }
-        setLoading(false)
     }
 
     return (
