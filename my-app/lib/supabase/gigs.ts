@@ -1,6 +1,6 @@
+import { Application } from "@/types/application";
 import { Gig } from "@/types/gig";
 import { supabase } from "../supabase";
-import { Application } from "@/types/application";
 
 export async function getTopRecentGigs() {
     const { data, error } = await supabase
@@ -36,21 +36,32 @@ export async function fetchGig(id: string | string[]) {
 }
 
 export const postGig = async (gig: Gig) => {
-    const { error } = await supabase
+    const { data, error } = await supabase
         .from('gigs')
         .insert(gig)
+        .select()
 
-    return error;
+    return {error, data} ;
 }
 
 export const updateGig = async (gig: Gig, id: any) => {
-    const { error } = await supabase
+    const { data, error } = await supabase
         .from('gigs')
         .update(gig)
         .eq('id', id)
+        .select()
 
-    return error;
+    return {error, data} ;
 }
+export const updateImgGig = async (name: string, id: any) => {
+    const { error } = await supabase
+        .from('gigs')
+        .update({ img: name })
+        .eq('id', id)
+
+    return { error } ;
+}
+
 
 export const postApplicationGig = async (application: Application) => {
     const { error } = await supabase.from('gig_applications').insert(application)

@@ -1,24 +1,30 @@
-import { View, Text, TouchableOpacity, ScrollView, Image, Alert } from 'react-native'
-import React, { useCallback, useState } from 'react'
+import GigBox from '@/components/GigBox'
+import PostBox from '@/components/PostBox'
+import { useCurrentUser } from '@/hooks/useCurrentUser'
+import { supabase } from '@/lib/supabase'
+import { getNumberBaseOnCategory, getNumberOfArtist } from '@/lib/supabase/artist'
+import { getNumberOfGigs, getTopRecentGigs } from '@/lib/supabase/gigs'
+import { loadNewNotification } from '@/lib/supabase/notification'
 import FontAwesome from '@expo/vector-icons/FontAwesome'
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6'
-import MaterialIcons from '@expo/vector-icons/MaterialIcons'
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons'
-import GigBox from '@/components/GigBox'
 import Ionicons from '@expo/vector-icons/Ionicons'
-import { getNumberOfGigs, getTopRecentGigs } from '@/lib/supabase/gigs'
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons'
+import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { useFocusEffect, useRouter } from 'expo-router'
-import { useCurrentUser } from '@/hooks/useCurrentUser'
-import { loadNewNotification } from '@/lib/supabase/notification'
-import { getNumberBaseOnCategory, getNumberOfArtist } from '@/lib/supabase/artist'
+import React, { useCallback, useState } from 'react'
+import { Alert, Button, FlatList, Image, Modal, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native'
 
 const Home = () => {
   const [data, setData] = useState<any[]|null>(null);
+  const [ searchData, setSearchData] = useState<any[]|null>(null);
   const [ artists, setArtists] = useState(0);
   const [ gigs, setGigs] = useState(0);
   const [ musicians, setMusicians] = useState(0);
   const [ comedians, setComedians] = useState(0);
   const [ notifications, setNotifications] = useState(0);
+  const [ modalVisible, setModalVisible] = useState(false);
+  const [ isFocused, setIsFocused] = useState<string | null>(null);
+  const [ searchText, setSearchText] = useState("");
   const { uid } = useCurrentUser();
   const router = useRouter();
 
@@ -93,8 +99,67 @@ const Home = () => {
       loadNotification()
     }, [uid])
   )
+
+  const handleClose = () => {
+    setSearchText('')
+    setModalVisible(false)
+    setIsFocused(null)
+    setSearchData(null)
+  }
+
+  const handleGigSearch = async (query: string) => {
+    let searchPattern = `%${query}%`;
+    
+    const { data, error } = await supabase
+    .from('gigs')
+    .select()
+    .or(
+      `title.ilike.${searchPattern}`
+    );
+
+    if(error){
+      console.log(error);
+      return;
+    }else{
+      setSearchData(data)
+    }
+    
+  }
   return (
     <View className='w-full items-center p-4 bg-[#000e1a] h-full'>
+      <Modal visible={modalVisible} transparent={true} animationType="fade" onRequestClose={() => setModalVisible(false)}>
+          <View className='m-3 bg-primary'>
+            <View className='flex flex-row items-center bg-primary mb-1 '>
+              <TextInput
+                className={`border-2 p-2 px-3 m-1 rounded-l-full font-bold bg-secondary w-[85%] ${isFocused === "search" ? 'border-tertiary text-tertiary' : 'border-secondary text-gray-400' }`}
+                value={searchText}
+                onChangeText={setSearchText}
+                placeholder='Type your search...'
+                placeholderTextColor={'gray'}
+                onFocus={() => setIsFocused('search')}
+                onBlur={() => setIsFocused(null)}
+              />
+              <TouchableOpacity className='w-[13%] bg-secondary border-2 size-11 border-tertiary rounded-r-full flex items-center justify-center' onPress={() => handleGigSearch(searchText)}>
+                <FontAwesome name="search" size={20} color="#1d7fe0" />
+              </TouchableOpacity>
+            </View>
+            <View className='bg-secondary rounded-md h-auto mb-3'>
+              {searchData !== null ? (
+                <FlatList
+                className='bg-primary p-4'
+                data={searchData}
+                showsVerticalScrollIndicator={false}
+                renderItem={({item}) => <PostBox data={item} />}
+                ListEmptyComponent={ <Text className='text-center my-10 text-xl font-semibold text-white'>NO DATA FOUND</Text>}
+                keyExtractor={item => item.id}
+                />
+              ) : (
+                <Text className='text-center my-10 text-xl font-semibold text-white'>...search again</Text>
+              )  }
+            </View>
+            <Button title='close' onPress={() => handleClose()} />
+          </View>
+      </Modal>
       <View className='w-full flex flex-row justify-between pb-2'>
         <View className='flex flex-row flex-wrap gap-3 items-center'>
           <FontAwesome6 name="music" size={20} color="#1d7fe0" />
@@ -124,7 +189,7 @@ const Home = () => {
           <Text className="text-3xl text-white font-extrabold">Find Your Next Gig</Text>
           <Text className="text-md text-gray-300 text-center p-2 font-bold">Connect with venues and get paid for your talent</Text>
           <View className="w-full flex flex-row justify-evenly my-3">
-            <TouchableOpacity className="w-40 mr-1 flex flex-row justify-center items-center border-2 border-tertiary bg-tertiary rounded-lg py-3">
+            <TouchableOpacity className="w-40 mr-1 flex flex-row justify-center items-center border-2 border-tertiary bg-tertiary rounded-lg py-3" onPress={() => setModalVisible(true)}>
               <FontAwesome name="search" size={15} color="#00172D" />
               <Text className="text-[#00172D] ml-2 font-bold">Find Gigs</Text>
             </TouchableOpacity>

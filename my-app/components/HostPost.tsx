@@ -1,13 +1,15 @@
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Image, Alert } from 'react-native'
-import React, { useEffect, useState } from 'react'
-import DateTimePicker from '@react-native-community/datetimepicker';
-import Fontisto from '@expo/vector-icons/Fontisto';
-import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
-import Ionicons from '@expo/vector-icons/Ionicons';
-import { Gig } from '@/types/gig';
-import { router } from 'expo-router';
-import { postGig, updateGig } from '@/lib/supabase/gigs';
 import { supabase } from '@/lib/supabase';
+import { postGig, updateGig, updateImgGig } from '@/lib/supabase/gigs';
+import { Gig } from '@/types/gig';
+import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
+import Fontisto from '@expo/vector-icons/Fontisto';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { decode } from 'base64-arraybuffer';
+import * as ImagePicker from 'expo-image-picker';
+import { router } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { Alert, Image, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 
 const HostPost = ({ data, type } : any) => {
@@ -27,10 +29,29 @@ const HostPost = ({ data, type } : any) => {
     const [ loading, setLoading] = useState(false);
     const [ loadTag, setLoadTag] = useState(false);
     const [ loadReq, setLoadReq] = useState(false);
+    const [ oldPic, setOldPic] = useState(false);
     const [ tags, setTags] = useState<string[]>(['']);
     const [ requirements , setRequirements] =  useState<string[]>(['']);
+    const [ localImage, setLocalImage] = useState<any | null | undefined>(null)
+    const [ previewUri, setPreviewUri] = useState<string | null | undefined>(null)
+    const [ signedUrl, setSignedUrl] = useState<any | null | undefined>(null)
+
 
     useEffect(() => {
+
+        const loadPic = async (img: string) => {
+            setOldPic(true)
+            const { data, error } = await supabase.storage
+                    .from('assets')
+                    .createSignedUrl(`gig/${img}`, 60)
+        
+            if(error) { Alert.alert(error.message) }
+
+            if(data){
+               setSignedUrl(data.signedUrl)
+            }
+        }
+
         if (data) {
           setTitle(data.title || "");
           setDescription(data.description || "");
@@ -40,6 +61,9 @@ const HostPost = ({ data, type } : any) => {
           setPeople(String(data.people)|| "");
           setTags(data.tags || []);
           setRequirements(data.requirements || []);
+          if(data.img !== null){
+            loadPic(data.img)
+          }
         }
         
     }, [data]);
@@ -77,7 +101,7 @@ const HostPost = ({ data, type } : any) => {
     const handlePostGig = async () => {
         setLoading(true)
         if(title === '' || description === '' || place === '' ||
-            location === '' || amount === '' || people === '' || data === ''
+            location === '' || amount === '' || people === '' || data === '' || localImage === null
             || tags.length === 0 || requirements.length === 0){
               setLoading(false)
               return Alert.alert('Fill All fields')
@@ -108,12 +132,25 @@ const HostPost = ({ data, type } : any) => {
                 requirements,
             };
 
-            const error = await postGig(gig);
+            const { data, error} = await postGig(gig);
 
             if(error){
                 Alert.alert(error.message)
                 console.log(error.message);
             }else{ 
+                const id = data?.[0].id
+
+                const {error: errUpload } = await supabase
+                .storage
+                .from('assets')
+                .upload(`gig/gig${id}.${localImage.mimeType.split('/')[1]}`, decode(localImage.base64), {
+                    contentType: localImage.mimeType
+                })
+
+                if (errUpload) {
+                    console.error('Upload error:', errUpload)
+                }
+
                 console.log(`Sucess $€{data}`);
                 router.back();
             }
@@ -124,7 +161,7 @@ const HostPost = ({ data, type } : any) => {
     const handleUpdateGig = async () => {
         setLoading(true)
         if(title === '' || description === '' || place === '' ||
-            location === '' || amount === '' || people === '' || data === ''
+            location === '' || amount === '' || people === '' || data === '' || localImage === null
             || tags.length === 0 || requirements.length === 0){
               setLoading(false)
               return Alert.alert('Fill All fields')
@@ -155,12 +192,33 @@ const HostPost = ({ data, type } : any) => {
                 requirements,
             };
             
-            const error = await updateGig(gig, data.id)
+            
+            const { data: dataID, error} = await updateGig(gig, data.id);
 
             if(error){
                 Alert.alert(error.message)
                 console.log(error.message);
-            }else{ 
+            }else{
+                const id = dataID?.[0].id
+
+                if(localImage !== null){
+                    if(oldPic){
+                        const {error: errUpload } = await supabase
+                            .storage
+                            .from('assets')
+                            .update(`gig/gig${id}.${localImage.mimeType.split('/')[1]}`, decode(localImage.base64), {
+                                    contentType: localImage.mimeType
+                            })
+        
+                        if (errUpload) {
+                            Alert.alert(errUpload.message)
+                        } else{
+                            const { error : errorImg } = await updateImgGig(`gig${id}.${localImage.mimeType.split('/')[1]}`, data.id);
+                            if (errorImg) { console.error('img error:', errorImg) }
+                        }
+                    }
+                }
+
                 console.log(`Sucess $€{data}`);
                 router.push(`/(context)/post/${data.id}`)
             }
@@ -197,6 +255,29 @@ const HostPost = ({ data, type } : any) => {
         }
         setLoadReq(false)
     };
+    
+    const handleUploadImg = async () => {
+        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync()
+
+        if (!permissionResult.granted) {
+            alert("Permission to access gallery is required!")
+            return
+        }
+
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            quality: 1,
+            base64: true
+        })
+
+        if (!result.canceled) {
+            setLocalImage(result.assets[0]) 
+            setPreviewUri(result.assets[0].uri)
+            setSignedUrl(null)
+        }
+
+      
+    }
 
 
     return (
@@ -291,7 +372,7 @@ const HostPost = ({ data, type } : any) => {
             <View>
                 <Text className='ml-1 text-gray-400 font-bold'>Start Time</Text>
                 <View className='flex flex-row flex-wrap gap-2 items-center'>
-                    <Text className='border-2 p-2 border-secondary bg-secondary rounded-md w-36 text-gray-400 font-bold'>{startTime.toLocaleTimeString([], {hour: 'numeric', minute: '2-digit', hour12: true})}</Text>
+                    <Text className='border-2 p-2 border-secondary bg-secondary rounded-md w-32 text-gray-400 font-bold'>{startTime.toLocaleTimeString([], {hour: 'numeric', minute: '2-digit', hour12: true})}</Text>
                     <TouchableOpacity className='bg-gray-700 p-2 rounded-md' onPress={() => showTimepicker('start')}>
                         <FontAwesome6 name="clock" size={24} color="white" />
                     </TouchableOpacity>
@@ -300,7 +381,7 @@ const HostPost = ({ data, type } : any) => {
             <View>
                 <Text className='ml-1 text-gray-400 font-bold'>End Time</Text>
                 <View className='flex flex-row flex-wrap gap-2 items-center'>
-                    <Text className='border-2 p-2 border-secondary bg-secondary rounded-md w-36 text-gray-400 font-bold'>{endTime.toLocaleTimeString([], {hour: 'numeric', minute: '2-digit', hour12: true})}</Text>
+                    <Text className='border-2 p-2 border-secondary bg-secondary rounded-md w-32 text-gray-400 font-bold'>{endTime.toLocaleTimeString([], {hour: 'numeric', minute: '2-digit', hour12: true})}</Text>
                     <TouchableOpacity className='bg-gray-700 p-2 rounded-md' onPress={() => showTimepicker('end')}>
                         <FontAwesome6 name="clock" size={24} color="white" />
                     </TouchableOpacity>
@@ -366,8 +447,16 @@ const HostPost = ({ data, type } : any) => {
 
         <View className='w-full flex'>
             <Text className='ml-1 text-gray-400 font-bold' >Add Photo</Text>
-            <TouchableOpacity className='bg-gray-700 rounded-md items-center justify-center h-40 m-1'>
-                <Text className='font-semibold text-white'>Venue Photo</Text>
+            <TouchableOpacity className='bg-gray-700 rounded-md items-center justify-center h-72 m-1' onPress={() => {handleUploadImg()}}>
+                {signedUrl ? (
+                    <Image src={signedUrl} className='rounded-md w-full h-72 m-1'/>
+                ): (
+                    previewUri ? (
+                        <Image source={{ uri: previewUri }} className='rounded-md w-full h-72 m-1'/>
+                    ): (
+                        <Text className='font-semibold text-white'>Venue Photo</Text>
+                    )
+                )}
             </TouchableOpacity>
         </View>
         {type !== 'edit' ? (

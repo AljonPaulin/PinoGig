@@ -1,25 +1,24 @@
-import { View, Text, TouchableOpacity, Image, ScrollView, Alert, ActivityIndicator } from 'react-native'
-import React, { useEffect, useState } from 'react'
-import { router, useLocalSearchParams } from 'expo-router'
-import { SafeAreaView } from 'react-native-safe-area-context';
-import Ionicons from '@expo/vector-icons/Ionicons';
-import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
+import DeleteAlert from '@/components/DeleteAlert';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { supabase } from '@/lib/supabase';
+import { checkForApplication, deleteBooking, postBooking } from '@/lib/supabase/booking';
+import { deleteGig, fetchGig } from '@/lib/supabase/gigs';
+import { getProfile } from '@/lib/supabase/profile';
+import { getUserByID } from '@/lib/supabase/users';
+import { Booking } from '@/types/booking';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { Gig } from '@/types/gig';
-import { deleteGig, fetchGig } from '@/lib/supabase/gigs';
-import { createUrls, getBucket, getGigPic } from '@/lib/supabase/storage';
-import { Booking } from '@/types/booking';
-import { useCurrentUser } from '@/hooks/useCurrentUser';
-import DeleteAlert from '@/components/DeleteAlert';
-import { getProfile } from '@/lib/supabase/profile';
+import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { getUserByID } from '@/lib/supabase/users';
-import { checkForApplication, deleteBooking, postBooking } from '@/lib/supabase/booking';
+import { router, useLocalSearchParams } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 const GigDetails = () => {
     const {id} = useLocalSearchParams();
     const { uid } = useCurrentUser();
-    const [gigData, setGigData] = useState<Gig |null>(null)
+    const [gigData, setGigData] = useState<any |null>(null)
     const [ userProfile, setUserProfile ] = useState<any | null>(null);
     const [ gigHost, setGigHost ] = useState<any | null>(null);
     const [gigPic, setGigPic] = useState("")
@@ -38,6 +37,7 @@ const GigDetails = () => {
             if(error){
                 Alert.alert(error.message)
             }else{
+                loadPic(data?.[0]);
                 setGigData(data?.[0]);
                 setGigUid(data?.[0].uuid);
             }
@@ -74,22 +74,20 @@ const GigDetails = () => {
             }
         }
 
-        if (gigPic) return; // use cached
-       
-        const loadPic = async () => {
-            const { data, error } = await getBucket();
-            if(error){
-                Alert.alert(error.message)
-            }else{
+        const loadPic = async ( item : any) => {
+            const { data, error } = await supabase
+                .storage
+                .from('assets')
+                .createSignedUrl(`gig/${item.img}`, 60)
+            
+                if(error) { Alert.alert(error.message) }
+
                 if(data){
-                    const urls = (await createUrls(data[0].name)).data?.signedUrl
-                    setGigPic(urls ?? '');
+                    setGigPic(data.signedUrl);
                     console.log("Success Bucket");
                 }
-            }
         }
         loadData();
-        loadPic();
     }, [uid])
 
     const handleApply = async() => {
@@ -162,8 +160,12 @@ const GigDetails = () => {
             </View>
             {gigData && gigHost ? (
             <ScrollView showsVerticalScrollIndicator={false}  className='bg-primary'>
-                <Image
-                className='w-full size-56 bg-slate-600' src={gigPic} />
+                {gigPic !== "" ? (
+                    <Image className='w-full size-56 bg-slate-600' src={gigPic} />
+                ) : (
+                    <Image className='w-full size-56 bg-slate-600'
+                    source={require('../../../assets/images/react-logo.png')} />
+                )}
                 <View className='w-full p-4'>
                     <View className='w-full flex flex-row justify-between mb-3'>
                         <View>

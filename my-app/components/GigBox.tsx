@@ -1,7 +1,7 @@
-import { View, Text, TouchableOpacity } from 'react-native'
-import React from 'react'
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
+import React from 'react';
+import { Text, TouchableOpacity, View } from 'react-native';
 
 const GigBox = (props: any) => {
   const router = useRouter();
@@ -21,7 +21,7 @@ const GigBox = (props: any) => {
       <View className='flex flex-row flex-wrap gap-5 my-2'>
         <View className='flex flex-row items-center'>
             <Ionicons name="musical-notes" size={16} color="#1d7fe0" />
-            <Text className='text-[#1d7fe0] font-bold'> {props.data.tags}</Text>
+            <Text className='text-[#1d7fe0] font-bold'> {props.data.tags[0]}</Text>
         </View>
         <View className='flex flex-row items-center'>
             <Ionicons name="time" size={16} color="#1d7fe0" />

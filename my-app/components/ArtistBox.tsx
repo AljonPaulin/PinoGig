@@ -1,10 +1,27 @@
-import { View, Text, TouchableOpacity, Image } from 'react-native'
-import React from 'react'
-import { useRouter } from 'expo-router';
+import { supabase } from '@/lib/supabase';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { Alert, Image, Text, TouchableOpacity, View } from 'react-native';
 
 const ArtistBox = (props: any) => {
     const router = useRouter();
+    const [ gigPic, setGigPic ] = useState<string | null>(null)
+    useEffect(()=>{
+        const loadPic = async ( item : any) => {
+            const { data, error } = await supabase
+                .storage
+                .from('assets')
+                .createSignedUrl(`gig/${item.img}`, 60)
+            
+                if(error) { Alert.alert(error.message) }
+
+                if(data){
+                    setGigPic(data.signedUrl);
+                    console.log("Success Bucket");
+                }
+        }
+    })
     return (
         <View className="w-full px-4 mb-4">
             <View className="w-full bg-secondary p-4 mb-3 rounded-xl">
@@ -26,10 +43,10 @@ const ArtistBox = (props: any) => {
                     </View>
                 </View>
                 <View className='flex flex-row justify-evenly my-2'>
-                    <TouchableOpacity  className='w-44 bg-tertiary p-2 rounded-md'>
+                    <TouchableOpacity  className='w-40 bg-tertiary p-2 rounded-md'>
                         <Text className='text-white text-center'>Book Now</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity className='w-44 bg-tertiary p-2 rounded-md' onPress={() => router.push(`/(context)/profile/${props.data.uuid}`)}>
+                    <TouchableOpacity className='w-40 bg-tertiary p-2 rounded-md' onPress={() => router.push(`/(context)/profile/${props.data.uuid}`)}>
                         <Text className='text-white text-center'> See Profile</Text>
                     </TouchableOpacity>
                 </View>

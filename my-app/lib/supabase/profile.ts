@@ -5,3 +5,23 @@ export async function getProfile(uuid: any) {
     const { data: hostData, error: hostError } = await supabase.from('profileHost').select().eq('uuid', uuid)
     return { artistData, artistError, hostData, hostError};
 }
+
+export const updateImgProfile = async (name: string, id: any, type: any) => {
+    if(type === 'artist'){
+        const { error } = await supabase
+        .from('profileArtist')
+        .update({ img: name })
+        .eq('id', id)
+
+        return { error } ;
+    }else{
+        const { error } = await supabase
+        .from('profileHost')
+        .update({ img: name })
+        .eq('id', id)
+
+        return { error } ;
+    }
+   
+}
+

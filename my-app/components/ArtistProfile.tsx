@@ -1,18 +1,48 @@
-import { View, Text, ScrollView, TouchableOpacity, Image } from 'react-native'
-import React, { useEffect } from 'react'
+import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { supabase } from '@/lib/supabase';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
+import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { Alert, Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
 const ArtistProfile = (props : any) => {
     const router = useRouter();
+    const [ gigPic, setGigPic ] = useState<string | null>(null)
+    const { uid } = useCurrentUser()
+
+    useEffect(()=>{
+        if(!uid) return
+        const loadPic = async ( item : any) => {
+
+            const { data, error } = await supabase
+                .storage
+                .from('assets')
+                .createSignedUrl(`profile/artist/${item.img}`, 60)
+            
+                if(error) { Alert.alert(error.message) }
+
+                if(data){
+                    setGigPic(data.signedUrl)
+                    console.log("Success Bucket");
+                }
+        }
+        loadPic(props.profile)
+    }, [uid])
+
+
 
     return (
         <ScrollView showsVerticalScrollIndicator={false} className='mb-14 bg-primary'>
         <View className='flex items-center p-3'>
-        <Image source={require('../assets/images/react-logo.png')} className='size-24 bg-gray-500 rounded-full m-3'/>
+        {gigPic !== null && gigPic !== undefined ? (
+            <Image src={gigPic} className='size-24 rounded-full m-3'/>
+        ) : (
+            <Image source={require('../assets/images/react-logo.png')} className='size-24 bg-gray-500 rounded-full m-3'/>
+        )
+        }
         <Text className='text-2xl text-white'>{props.profile.name}</Text>
         <Text className='text-md text-gray-400 font-semibold m-2'>{props.profile.description}</Text>
         <View className='flex flex-row flex-wrap gap-1 items-center mb-2'>

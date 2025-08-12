@@ -1,13 +1,13 @@
-import { View, Text, TouchableOpacity, FlatList } from 'react-native'
-import React, { useCallback, useState } from 'react'
-import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import PostBox from '@/components/PostBox';
-import { fetchAllAppicationGigs, getAllGigs } from '@/lib/supabase/gigs';
 import ArtistBox from '@/components/ArtistBox';
-import Entypo from '@expo/vector-icons/Entypo';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import PostBox from '@/components/PostBox';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { getNumberOfUnreadChat } from '@/lib/supabase/chats';
+import { fetchAllAppicationGigs, getAllGigs } from '@/lib/supabase/gigs';
+import Entypo from '@expo/vector-icons/Entypo';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useCallback, useState } from 'react';
+import { FlatList, Text, TouchableOpacity, View } from 'react-native';
 
 const Gigs = () => {
   const router = useRouter();
@@ -132,11 +132,11 @@ const Gigs = () => {
             </View>
         </View>
         <View className='w-full flex flex-row items-center justify-between p-4 bg-primary'>
-          <TouchableOpacity className={`w-48 p-2 border-2 rounded-md ${isHost ?  "bg-tertiary border-tertiary" : "bg-secondary border-gray-400" }`} onPress={() => handleFilterMain('host')}>
-            <Text className={`text-xl text-center ${isHost ?  "text-black" : "text-white" }`}>Offered By Host</Text>
+          <TouchableOpacity className={`w-44 p-2 border-2 rounded-md ${isHost ?  "bg-tertiary border-tertiary" : "bg-secondary border-gray-400" }`} onPress={() => handleFilterMain('host')}>
+            <Text className={`text-lg text-center ${isHost ?  "text-black" : "text-white" }`}>Offered By Host</Text>
           </TouchableOpacity>
-          <TouchableOpacity className={`w-48 p-2 border-2 rounded-md ${isHost ?  "bg-secondary border-gray-400" : "bg-tertiary border-tertiary" }`} onPress={() => handleFilterMain('artist')}>
-            <Text  className={`text-xl text-center ${isHost ?  "text-white" : "text-black" }`} >Offered By Artists</Text>
+          <TouchableOpacity className={`w-44 p-2 border-2 rounded-md ${isHost ?  "bg-secondary border-gray-400" : "bg-tertiary border-tertiary" }`} onPress={() => handleFilterMain('artist')}>
+            <Text  className={`text-lg text-center ${isHost ?  "text-white" : "text-black" }`} >Offered By Artists</Text>
           </TouchableOpacity>
         </View>
         {

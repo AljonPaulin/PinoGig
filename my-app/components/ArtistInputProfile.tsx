@@ -1,11 +1,16 @@
-import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native'
-import React, { useEffect, useState } from 'react'
-import { MultipleSelectList } from 'react-native-dropdown-select-list';
-import { Artist } from '@/types/artist';
-import { router } from 'expo-router';
-import { User } from '@/types/user';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { supabase } from '@/lib/supabase';
+import { updateImgProfile } from '@/lib/supabase/profile';
 import { postArtistProfile, postUser, updateArtistProfile } from '@/lib/supabase/users';
+import { Artist } from '@/types/artist';
+import { User } from '@/types/user';
+import { decode } from 'base64-arraybuffer';
+import * as ImagePicker from 'expo-image-picker';
+import { router } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { Alert, Image, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { MultipleSelectList } from 'react-native-dropdown-select-list';
+
 
 const ArtistInputProfile = ({ data, mode } : any) => {
     const [ name, setName ] = useState("");
@@ -16,10 +21,29 @@ const ArtistInputProfile = ({ data, mode } : any) => {
     const [ isFocused, setIsFocused] = useState<string | null>(null);
     const [ skills, setSkills] = useState([]);
     const [ loading, setLoading ] = useState(false);
+    const [ localImage, setLocalImage] = useState<any | null | undefined>(null)
+    const [ previewUri, setPreviewUri] = useState<string | null | undefined>(null)
+    const [ signedUrl, setSignedUrl] = useState<any | null | undefined>(null)
+    const [ oldPic, setOldPic] = useState(false);
+
+
     const { uid, email } = useCurrentUser();
 
 
     useEffect(() => {
+        const loadPic = async (img: string) => {
+            setOldPic(true)
+            const { data, error } = await supabase.storage
+                    .from('assets')
+                    .createSignedUrl(`profile/artist/${img}`, 60)
+                    
+            if(error) { Alert.alert(error.message) }
+
+            if(data){
+               setSignedUrl(data.signedUrl)
+            }
+        }
+
         if (data) {
           setName(data.name || "");
           setAbout(data.about || "");
@@ -27,9 +51,10 @@ const ArtistInputProfile = ({ data, mode } : any) => {
           setLocation(data.location || "");
           setPhone(data.phone || "");
           setSkills(data.skills || []);
+          if(data.img !== null){
+            loadPic(data.img)
+          }
         }
-        console.log(skills);
-        
       }, [data]);
 
     const typeData = [
@@ -83,7 +108,7 @@ const ArtistInputProfile = ({ data, mode } : any) => {
         setLoading(true)
         if (!email) return;
         if(name === '' || about === '' || description === '' ||
-            location === '' || phone === '' || skills.length === 0 || email === ''){
+            location === '' || phone === '' || skills.length === 0 || email === '' || localImage === null){
               setLoading(false)
               return Alert.alert('Fill All fields')
         }else{
@@ -101,15 +126,83 @@ const ArtistInputProfile = ({ data, mode } : any) => {
             if(artistError){
                 Alert.alert(artistError.message)
             }else{
+                const id = data.id
+                console.log(localImage.mimeType);
+                
+
+                if(localImage !== null){
+                    if(oldPic){
+                        const {error: errUpload } = await supabase
+                            .storage
+                            .from('assets')
+                            .update(`profile/artist/profile${id}.${localImage.mimeType.split('/')[1]}`, decode(localImage.base64), {
+                                    contentType: localImage.mimeType
+                            })
+        
+                        if (errUpload) {
+                            Alert.alert(errUpload.message)
+                        } else{
+                            const { error : errorImg } = await updateImgProfile(`profile${id}.${localImage.mimeType.split('/')[1]}`, data.id, 'artist');
+                            if (errorImg) { console.error('img error:', errorImg) }
+                        }
+                    }else{
+                        const {error: errUpload } = await supabase
+                            .storage
+                            .from('assets')
+                            .upload(`profile/artist/profile${id}.${localImage.mimeType.split('/')[1]}`, decode(localImage.base64), {
+                                    contentType: localImage.mimeType
+                            })
+    
+                        if (errUpload) {
+                            Alert.alert(errUpload.message)
+                        } else{
+                            const { error : errorImg } = await updateImgProfile(`profile${id}.${localImage.mimeType.split('/')[1]}`, data.id, 'artist');
+                            if (errorImg) { console.error('img error:', errorImg) }
+                        }
+                    }
+                }
+
                 console.log('Success in updating profile');
                 router.push('/(tabs)/Profile')
             }
             setLoading(false)
         }
     }
+    const handleUploadImg = async () => {
+        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync()
+
+        if (!permissionResult.granted) {
+            alert("Permission to access gallery is required!")
+            return
+        }
+
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            quality: 1,
+            base64: true
+        })
+
+        if (!result.canceled) {
+            setLocalImage(result.assets[0]) 
+            setPreviewUri(result.assets[0].uri)
+            setSignedUrl(null)
+        }
+    }
+
 
     return (
         <View className='w-full p-4'>
+            <TouchableOpacity className='bg-gray-700 rounded-md items-center justify-center h-72 m-1' onPress={() => {handleUploadImg()}}>
+                {signedUrl ? (
+                    <Image src={signedUrl} className='rounded-md w-full h-72 m-1'/>
+                ): (
+                    previewUri ? (
+                        <Image source={{ uri: previewUri }} className='rounded-md w-full h-72 m-1'/>
+                    ): (
+                        <Text className='font-semibold text-white'>Profile Photo</Text>
+                    )
+                )}
+            </TouchableOpacity>
             <View>
                 <Text className={`ml-1 font-bold ${isFocused === "name" ? 'text-tertiary' : 'text-gray-400' }`}>Name</Text>
                 <TextInput
