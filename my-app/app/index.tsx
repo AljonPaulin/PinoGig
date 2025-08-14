@@ -2,7 +2,7 @@ import { supabase } from "@/lib/supabase";
 import { Session } from "@supabase/supabase-js";
 import { useRootNavigationState, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, View } from "react-native";
+import { Image, View } from "react-native";
 
 export default function Index() {
   const [session, setSession] = useState<Session | null | undefined>(undefined);
@@ -40,8 +40,8 @@ export default function Index() {
 
   // Splash Screen UI while checking
   return (
-    <View className="flex-1 justify-center items-center bg-white">
-      <ActivityIndicator size="large" color="#7e22ce" className="mt-4" />
+    <View className="flex-1 justify-center items-center bg-primary">
+      <Image className='size-40 bg-[#082644] rounded-full' source={require('../assets/images/logoPinogig.png')} />
     </View>
   );
 }

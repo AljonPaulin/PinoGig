@@ -1,12 +1,15 @@
-import { View, Text, TouchableOpacity, Modal } from 'react-native'
-import React, { AnyActionArg } from 'react'
 import { router } from 'expo-router'
+import React from 'react'
+import { Modal, Text, TouchableOpacity, View } from 'react-native'
 
 const CustomAlert = ({ visible , type, message, onClose }: any ) => {
 
     const handle = (type: any) =>{
         if(type === 'profile'){
             router.push('/(tabs)/Profile')
+        }
+        if(type === 'development'){
+            router.push('/(subTabs)/Books')
         }
         if(type === 'host'){
             router.push('/(tabs)/Setting')

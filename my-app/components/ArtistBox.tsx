@@ -2,7 +2,7 @@ import { supabase } from '@/lib/supabase';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Alert, Image, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Text, TouchableOpacity, View } from 'react-native';
 
 const ArtistBox = (props: any) => {
     const router = useRouter();
@@ -26,7 +26,7 @@ const ArtistBox = (props: any) => {
         <View className="w-full px-4 mb-4">
             <View className="w-full bg-secondary p-4 mb-3 rounded-xl">
                 <View className="w-full flex flex-row justify-evenly items-center">
-                    <Image source={require('../assets/images/react-logo.png')} className='size-24 bg-gray-500 rounded-full m-3'/>
+                    <FontAwesome name="user" size={40} color="#1d7fe0"  className='px-5 py-3 bg-primary rounded-full'/>
                     <View>
                         <Text numberOfLines={1} className='w-64 text-ellipsis font-semibold text-xl text-white'>{props.data.stageName}</Text>
                         <Text numberOfLines={1} className='font-semibold text-lg text-gray-400'>{props.data.category}</Text>

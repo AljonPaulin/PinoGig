@@ -1,15 +1,18 @@
-import { View, Text, TouchableOpacity, Image, Alert, FlatList, ActivityIndicator } from 'react-native'
-import React, { useCallback, useState } from 'react'
+import { useCurrentUser } from '@/hooks/useCurrentUser'
+import { supabase } from '@/lib/supabase'
+import { getLatestChat, getMessageFromCurrentUser, getMessageToCurrentUser } from '@/lib/supabase/chats'
+import { getProfileArtist, getProfileHost } from '@/lib/supabase/profile'
+import { getTimeAgo } from '@/utils/timeAgo'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import { router, useFocusEffect } from 'expo-router'
-import { useCurrentUser } from '@/hooks/useCurrentUser'
-import { getTimeAgo } from'@/utils/timeAgo';
-import { getLatestChat, getMessageFromCurrentUser, getMessageToCurrentUser } from '@/lib/supabase/chats'
+import React, { useCallback, useState } from 'react'
+import { ActivityIndicator, Alert, FlatList, Image, Text, TouchableOpacity, View } from 'react-native'
 
 const Chats = () => {
   const { uid } = useCurrentUser();
   const [ chatsData, setChatsData] = useState<any[] | null>(null);
   const [ chatsName, setChatsName] = useState<any[] | null>(null);
+  const [ chatsImg, setChatsImg] = useState<any[] | null>(null);
   const [ showContent, setShowContent ] = useState(false)
 
   useFocusEffect(
@@ -48,6 +51,7 @@ const Chats = () => {
           if (!name || !conversationID) continue;
       
           if (!seenNames.has(name)) {
+            loadProfile(name)
             seenNames.add(name);
             setChatsName(prev => (prev ? [...prev, name] : [name]));
             
@@ -71,6 +75,54 @@ const Chats = () => {
         }
         return data?.[0] || null;
       }
+
+      const loadProfile = async ( name : any) => {
+
+        const { data: userData , error: errUser } = await supabase
+            .from('users')
+            .select()
+            .eq('name', name)
+
+        if(errUser){ Alert.alert(errUser.message) }
+
+        if(userData){
+          if(userData[0].type === 'artist'){
+            const { artistData, artistError } = await getProfileArtist(userData[0].uuid)
+            if(artistError){
+              Alert.alert(artistError.message)
+            }
+            if(artistData){
+              if(artistData[0].img !== null){
+                loadPic(artistData[0].img)
+              }
+            }
+          }else{
+            const { hostData, hostError } = await getProfileHost(userData[0].uuid)
+            if(hostError){
+              Alert.alert(hostError.message)
+            }
+            if(hostData){
+              if(hostData[0].img !== null){
+                loadPic(hostData[0].img)
+              }
+            }
+          }
+        }
+      }
+
+      const loadPic = async (img: any) => {
+          const { data, error } = await supabase
+            .storage
+            .from('assets')
+            .createSignedUrl(`profile/artist/${img}`, 60)
+        
+            if(error) { Alert.alert(error.message) }
+
+            if(data){
+                setChatsImg(prev => (prev ? [...prev, data.signedUrl] : [data.signedUrl]));
+          }
+      }
+      
       loadNameMessages();
 
   }, [uid]));
@@ -122,7 +174,12 @@ const Chats = () => {
               renderItem={({item, index }) => 
                 <TouchableOpacity className={`flex flex-row items-center rounded-lg mx-2 mt-2 ${item.is_read === false ? "bg-secondary" : ""}`} onPress={() => handleReadMsg(item.sender_id, item.receiver_id)}>
                 <View className='w-[20%]'>
-                    <Image source={require('../../assets/images/react-logo.png')} className='size-16 bg-gray-500 rounded-full m-3'/>
+                    {chatsImg && chatsImg[index] !== undefined ?  (
+                            <Image src={chatsImg[index]} className='size-16 rounded-full m-3'/>
+                        ) : (
+                            <Image source={require('../../assets/images/react-logo.png')} className='size-16 bg-gray-500 rounded-full m-3'/>
+                        )
+                    }
                 </View>
                 <View className='w-3/4'>
                     <View className='wflex flex-row justify-between items-center'>

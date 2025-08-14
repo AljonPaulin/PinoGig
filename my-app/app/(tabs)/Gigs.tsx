@@ -131,7 +131,7 @@ const Gigs = () => {
               </View>
             </View>
         </View>
-        <View className='w-full flex flex-row items-center justify-between p-4 bg-primary'>
+        <View className='w-full flex flex-row items-center justify-evenly p-4 bg-primary'>
           <TouchableOpacity className={`w-44 p-2 border-2 rounded-md ${isHost ?  "bg-tertiary border-tertiary" : "bg-secondary border-gray-400" }`} onPress={() => handleFilterMain('host')}>
             <Text className={`text-lg text-center ${isHost ?  "text-black" : "text-white" }`}>Offered By Host</Text>
           </TouchableOpacity>

@@ -21,6 +21,8 @@ const Home = () => {
   const [ gigs, setGigs] = useState(0);
   const [ musicians, setMusicians] = useState(0);
   const [ comedians, setComedians] = useState(0);
+  const [ dancers, setDancers] = useState(0);
+  const [ speakers, setSpeakers] = useState(0);
   const [ notifications, setNotifications] = useState(0);
   const [ modalVisible, setModalVisible] = useState(false);
   const [ isFocused, setIsFocused] = useState<string | null>(null);
@@ -73,23 +75,31 @@ const Home = () => {
 
       // Display the number of singer, comedian and more
       const loadCategory = async () => {
-        const categories = ['Singer', 'Comedian'];
+        const categories = ['Singer', 'Comedian', 'Dancer', 'Speaker'];
         const results = await Promise.all(
           categories.map(category => getNumberBaseOnCategory(category))
         )
 
-        const [singerResult, comedianResult] = results;
+        const [singerResult, comedianResult, dancerResult, speakerResult] = results;
         const countSinger = singerResult.count;
+        const countDancer = dancerResult.count;
+        const countSpeaker = speakerResult.count;
         const countGigComedian = comedianResult.count;
         const gigErrorSinger = singerResult.error;
         const gigErrorComedian = comedianResult.error;
+        const gigErrorDancer = dancerResult.error;
+        const gigErrorSpeaker = speakerResult.error;
 
-        if(gigErrorSinger || gigErrorComedian){
+        if(gigErrorSinger || gigErrorComedian || gigErrorDancer || gigErrorSpeaker){
           if(gigErrorSinger) Alert.alert(gigErrorSinger.message);
-          if(gigErrorSinger) Alert.alert(gigErrorSinger.message)
+          if(gigErrorComedian) Alert.alert(gigErrorComedian.message)
+          if(gigErrorDancer) Alert.alert(gigErrorDancer.message)
+          if(gigErrorSpeaker) Alert.alert(gigErrorSpeaker.message)
         }else{
           if(countSinger !== null) setMusicians(countSinger)
           if(countGigComedian !== null) setComedians(countGigComedian)
+          if(countDancer !== null) setDancers(countDancer)
+          if(countSpeaker !== null) setSpeakers(countSpeaker)
         }
     }
 
@@ -161,8 +171,9 @@ const Home = () => {
           </View>
       </Modal>
       <View className='w-full flex flex-row justify-between pb-2'>
-        <View className='flex flex-row flex-wrap gap-3 items-center'>
-          <FontAwesome6 name="music" size={20} color="#1d7fe0" />
+        <View className='flex flex-row flex-wrap gap-1 items-center'>
+          <Image className='size-8 rounded-md'
+                source={require('../../assets/images/logo3.png')} />
           <View className='flex flex-row flex-wrap gap-0 items-center'>
           <Text className='text-3xl font-semibold text-white'>Pino</Text>
           <Text className='text-3xl font-semibold text-tertiary'>Gig</Text>
@@ -178,9 +189,7 @@ const Home = () => {
               )}
             </TouchableOpacity>
             <TouchableOpacity onPress={() => router.push('/(tabs)/Profile')}>
-              <Image
-                className='size-8 bg-[#082644] rounded-full'
-                source={require('../../assets/images/react-logo.png')} />
+              <FontAwesome name="user" size={20} color="#1d7fe0"  className='px-2 py-1 bg-secondary rounded-full'/>
             </TouchableOpacity>
         </View>
       </View>
@@ -209,7 +218,7 @@ const Home = () => {
             <Text className="text-md text-gray-500 font-bold">Artist</Text>
           </View>
           <View className="w-28 bg-[#082644] flex justify-center items-center rounded-xl py-3">
-            <Text className="text-2xl font-semibold text-white">$4.2K</Text>
+            <Text className="text-2xl font-semibold text-white">$ 4.2 K</Text>
             <Text className="text-md text-gray-500 font-bold" >Avg. Pay</Text>
           </View>
         </View>
@@ -243,12 +252,12 @@ const Home = () => {
             <TouchableOpacity className="w-[45%] flex justify-center items-center bg-dark p-2 rounded-xl" onPress={() => router.push({pathname: '/Gigs', params : { main : 'artist' , filterData: 'dancers'}})}>
               <MaterialCommunityIcons name="dance-pole" size={24} color="#1d7fe0" />
               <Text className="text-xl font-semibold text-white">Dancers</Text>
-              <Text className="text-gray-400 font-bold">50 gigs</Text>
+              <Text className="text-gray-400 font-bold">{dancers} gigs</Text>
             </TouchableOpacity>
             <TouchableOpacity className="w-[45%] flex justify-center items-center bg-dark p-2 rounded-xl" onPress={() => router.push({pathname: '/Gigs', params : { main : 'artist' , filterData: 'speakers'}})}>
               <FontAwesome name="microphone" size={24} color="#1d7fe0" />
               <Text className="text-xl font-semibold text-white">Speakers</Text>
-              <Text className="text-gray-400 font-bold">60 gigs</Text>
+              <Text className="text-gray-400 font-bold">{speakers} gigs</Text>
             </TouchableOpacity>
           </View>
         </View>

@@ -6,6 +6,15 @@ export async function getProfile(uuid: any) {
     return { artistData, artistError, hostData, hostError};
 }
 
+export async function getProfileArtist(uuid: any) {
+    const { data: artistData, error : artistError } = await supabase.from('profileArtist').select().eq('uuid', uuid)
+    return { artistData, artistError };
+}
+export async function getProfileHost(uuid: any) {
+    const { data: hostData, error: hostError } = await supabase.from('profileHost').select().eq('uuid', uuid)
+    return { hostData, hostError};
+}
+
 export const updateImgProfile = async (name: string, id: any, type: any) => {
     if(type === 'artist'){
         const { error } = await supabase

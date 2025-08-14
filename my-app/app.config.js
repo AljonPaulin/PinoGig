@@ -2,11 +2,11 @@ import 'dotenv/config';
 
 export default {
   expo: {
-    name: "my-app",
+    name: "Pinogig",
     slug: "my-app",
     version: "1.0.0",
     orientation: "portrait",
-    icon: "./assets/images/icon.png",
+    icon: "./assets/images/logoPinogig.png",
     scheme: "myapp",
     userInterfaceStyle: "automatic",
     newArchEnabled: true,
@@ -17,8 +17,8 @@ export default {
 
     android: {
       adaptiveIcon: {
-        foregroundImage: "./assets/images/adaptive-icon.png",
-        backgroundColor: "#ffffff",
+        foregroundImage: "./assets/images/logoPinogig.png",
+        backgroundColor: "#000e1a",
       },
       edgeToEdgeEnabled: true,
       package: "com.anonymous.myapp"
@@ -50,6 +50,9 @@ export default {
     extra: {
       SUPABASEURL: process.env.SUPABASEURL,
       SUPABASEKEY: process.env.SUPABASEKEY,
+      eas: {
+        "projectId": "e7b66b07-9269-476f-8bdb-a489947e55d3"
+      }
     },
   },
 };

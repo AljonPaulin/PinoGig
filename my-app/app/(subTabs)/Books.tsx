@@ -1,10 +1,10 @@
-import { View, Text, TouchableOpacity, Image, Alert, FlatList, ActivityIndicator } from "react-native";
-import React, { useCallback, useState } from "react";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { getAllAcceptedBooking, getAllBooking, getAllCancelledBooking, updateBookingStatus } from "@/lib/supabase/booking";
+import { getUserType } from "@/lib/supabase/users";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router, useFocusEffect } from "expo-router";
-import { useCurrentUser } from "@/hooks/useCurrentUser";
-import { getUserType } from "@/lib/supabase/users";
-import { getAllAcceptedBooking, getAllBooking, getAllCancelledBooking, updateBookingStatus } from "@/lib/supabase/booking";
+import React, { useCallback, useState } from "react";
+import { ActivityIndicator, Alert, FlatList, Image, Text, TouchableOpacity, View } from "react-native";
 
 const Books = () => {
     const { uid } = useCurrentUser();
@@ -150,6 +150,7 @@ const Books = () => {
                         </View>
                     </View>
                     }
+                    ListEmptyComponent={ <Text className='text-center my-10 text-xl font-semibold text-white'>No Request Yet</Text>}
                     keyExtractor={item => item.id}
                     />
                 ) : tab === 'accepted' ? (
@@ -182,6 +183,7 @@ const Books = () => {
                         </View>
                     </View>
                     }
+                    ListEmptyComponent={ <Text className='text-center my-10 text-xl font-semibold text-white'>No Accepted Yet</Text>}
                     keyExtractor={item => item.id}
                     />
                 ) : (
@@ -209,6 +211,7 @@ const Books = () => {
                         </View>
                     </View>
                     }
+                    ListEmptyComponent={ <Text className='text-center my-10 text-xl font-semibold text-white'>No Cancelled Yet</Text>}
                     keyExtractor={item => item.id}
                    
                     />
